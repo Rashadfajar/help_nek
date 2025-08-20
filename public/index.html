@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pusat Bantuan Penyelenggaraan NEK Provinsi DKI Jakarta</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+  <div class="max-w-4xl mx-auto px-4 md:px-6 py-8 md:py-12">
+    <!-- Header -->
+    <div class="mb-4 flex flex-col items-center md:flex-row md:justify-center md:space-x-4">
+      <img src="assets/logo_jakarta.png" alt="Logo DKI Jakarta" class="h-16 md:h-20 mb-2 md:mb-0">
+      <div class="text-center md:text-left">
+        <h1 class="text-3xl md:text-5xl font-bold tracking-tight text-green-700">Pusat Bantuan</h1>
+        <h2 class="text-2xl md:text-2xl font-bold tracking-tight text-green-700">Penyelenggaraan NEK Provinsi DKI Jakarta</h2>
+      </div>
+    </div>
+
+
+    <div class="flex justify-end mb-4">
+      <button onclick="toggleAdminBar()" title="Mode Admin" class="text-xl hover:text-violet-700">⚙️</button>
+    </div>
+
+    <!-- Admin Bar (TERSEMBUNYI di awal) -->
+    <div id="adminBar" class="hidden mb-8 p-4 bg-violet-50 border border-violet-200 rounded-xl">
+      <div class="flex flex-wrap items-center gap-3">
+        <input id="adminKeyInput" type="password" placeholder="Masukkan Admin Key"
+               class="flex-1 min-w-[220px] p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500">
+        <button id="adminLoginBtn" class="px-3 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700">Login</button>
+        <button id="adminLogoutBtn" class="px-3 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 hidden">Logout</button>
+        <span id="adminStatus" class="text-sm text-gray-700"></span>
+      </div>
+
+      <!-- Admin Forms -->
+      <div id="adminForms" class="hidden mt-4 grid md:grid-cols-2 gap-4">
+        <!-- Add FAQ -->
+        <div class="bg-white p-4 border rounded-xl shadow-sm">
+          <h3 class="font-semibold mb-2 text-violet-700">Tambah FAQ</h3>
+          <input id="faqTitle" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-violet-500" placeholder="Pertanyaan (title)" />
+          <textarea id="faqContent" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-violet-500" rows="4" placeholder="Jawaban (content)"></textarea>
+          <button id="faqAddBtn" class="px-3 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 w-full">Tambah FAQ</button>
+        </div>
+
+        <!-- Add Glossary -->
+        <div class="bg-white p-4 border rounded-xl shadow-sm">
+          <h3 class="font-semibold mb-2 text-green-700">Tambah Glosarium</h3>
+          <input id="gloTitle" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Istilah (title)" />
+          <textarea id="gloContent" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500" rows="4" placeholder="Definisi (content)"></textarea>
+          <button id="gloAddBtn" class="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 w-full">Tambah Istilah</button>
+        </div>
+      </div>
+      <p class="mt-3 text-xs text-gray-500">Tip: tekan <kbd class="px-1 py-0.5 bg-gray-200 rounded">Ctrl</kbd> + <kbd class="px-1 py-0.5 bg-gray-200 rounded">Alt</kbd> + <kbd class="px-1 py-0.5 bg-gray-200 rounded">A</kbd> untuk menampilkan/menyembunyikan panel admin.</p>
+    </div>
+
+    <!-- Search -->
+    <div class="relative mb-8">
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="Cari FAQ atau istilah glosarium…"
+        class="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white"
+      />
+      <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="m21 21-4.35-4.35M10 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"/>
+      </svg>
+    </div>
+
+    <!-- FAQ -->
+    <section id="faqSection" class="mb-12">
+      <h2 class="text-4xl font-semibold text-violet-700 text-center">FAQ</h2>
+      <h2 class="text-1xl font-semibold mb-5 text-violet-700 text-center"> Frequently Asked Questions</h2>
+      <div id="faqResults" class="flex flex-col gap-2"></div>
+    </section>
+
+    <!-- Glosarium -->
+    <section id="glosariumSection" class="mb-12">
+      <h2 class="text-4xl font-semibold mb-5 text-green-500 text-center">Glosarium</h2>
+      <div id="glosariumResults" class="flex flex-col gap-2"></div>
+    </section>
+  </div>
+
+  <script>
+    // Elemen
+    const searchInput = document.getElementById('searchInput');
+    const faqResults = document.getElementById('faqResults');
+    const glosariumResults = document.getElementById('glosariumResults');
+
+    // Admin
+    const adminBar = document.getElementById('adminBar');
+    const adminKeyInput = document.getElementById('adminKeyInput');
+    const adminLoginBtn = document.getElementById('adminLoginBtn');
+    const adminLogoutBtn = document.getElementById('adminLogoutBtn');
+    const adminStatus = document.getElementById('adminStatus');
+    const adminForms = document.getElementById('adminForms');
+    const faqTitle = document.getElementById('faqTitle');
+    const faqContent = document.getElementById('faqContent');
+    const gloTitle = document.getElementById('gloTitle');
+    const gloContent = document.getElementById('gloContent');
+
+    // State
+    let faqData = [];
+    let glosariumData = [];
+    let adminKey = localStorage.getItem('adminKey') || null;
+
+    // ====== Admin visibility: DIPICU shortcut / querystring ======
+    function toggleAdminBar(force) {
+      if (typeof force === 'boolean') {
+        adminBar.classList.toggle('hidden', !force);
+      } else {
+        adminBar.classList.toggle('hidden');
+      }
+    }
+    // Shortcut: Ctrl + Alt + A
+    window.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.altKey && (e.key === 'a' || e.key === 'A')) {
+        e.preventDefault();
+        toggleAdminBar();
+      }
+    });
+    // Bisa juga lewat ?admin=1
+    if (new URLSearchParams(location.search).get('admin') === '1') {
+      toggleAdminBar(true);
+    }
+
+    // ====== Admin state ======
+    const isAdmin = () => !!adminKey;
+    function setAdminKey(key) {
+      adminKey = key || null;
+      if (key) localStorage.setItem('adminKey', key);
+      else localStorage.removeItem('adminKey');
+      renderAdminState();
+    }
+    function renderAdminState() {
+      if (isAdmin()) {
+        adminStatus.textContent = 'Mode Admin aktif';
+        adminLoginBtn.classList.add('hidden');
+        adminLogoutBtn.classList.remove('hidden');
+        adminKeyInput.classList.add('hidden');
+        adminForms.classList.remove('hidden');
+        document.querySelectorAll('.btn-del').forEach(el => el.classList.remove('hidden'));
+      } else {
+        adminStatus.textContent = '';
+        adminLoginBtn.classList.remove('hidden');
+        adminLogoutBtn.classList.add('hidden');
+        adminKeyInput.classList.remove('hidden');
+        adminForms.classList.add('hidden');
+        document.querySelectorAll('.btn-del').forEach(el => el.classList.add('hidden'));
+      }
+    }
+    adminLoginBtn.addEventListener('click', () => {
+      const key = adminKeyInput.value.trim();
+      if (!key) return alert('Masukkan admin key');
+      setAdminKey(key);
+    });
+    adminLogoutBtn.addEventListener('click', () => setAdminKey(null));
+
+    // ====== API helpers ======
+    const headersJSON = () => {
+      const h = { 'Content-Type': 'application/json' };
+      if (isAdmin()) h['x-admin-key'] = adminKey;
+      return h;
+    };
+
+    // ====== Fetch data ======
+    async function fetchData() {
+      try {
+        const [faqRes, glosariumRes] = await Promise.all([ fetch('/faq'), fetch('/glossary') ]);
+        if (!faqRes.ok || !glosariumRes.ok) throw new Error('API error');
+
+        let faqRows = await faqRes.json();
+        let glosariumRows = await glosariumRes.json();
+
+        // 🔧 Normalisasi: pastikan field-nya id/title/content ada,
+        // handle kemungkinan nama properti berbeda (ID, question/answer, dst)
+        faqData = faqRows.map(r => ({
+          id: r.id ?? r.ID ?? r.Id ?? null,
+          title: r.title ?? r.question ?? '',
+          content: r.content ?? r.answer ?? ''
+        }));
+
+        glosariumData = glosariumRows.map(r => ({
+          id: r.id ?? r.ID ?? r.Id ?? null,
+          title: r.title ?? r.term ?? '',
+          content: r.content ?? r.definition ?? ''
+        }));
+
+        // Sort glosarium A–Z
+        glosariumData.sort((a, b) => a.title.localeCompare(b.title, 'id', { sensitivity: 'base' }));
+
+        // 🔎 DEBUG: kalau ada yang masih tidak punya id, print
+        const noIdFaq = faqData.filter(x => !x.id);
+        const noIdGlo = glosariumData.filter(x => !x.id);
+        if (noIdFaq.length || noIdGlo.length) {
+          console.warn('Item tanpa id terdeteksi:', { noIdFaq, noIdGlo });
+        }
+
+        renderLists();
+        renderAdminState();
+      } catch (err) {
+        console.error('Gagal memuat data:', err);
+        faqResults.innerHTML = `<div class="p-4 text-red-600">Gagal memuat data FAQ.</div>`;
+        glosariumResults.innerHTML = `<div class="p-4 text-red-600">Gagal memuat data glosarium.</div>`;
+      }
+    }
+
+
+    async function updateItem(type, id, title, content) {
+      const res = await fetch(`/${type}/${id}`, {
+        method: 'PUT',
+        headers: headersJSON(),
+        body: JSON.stringify({ title, content })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Gagal' }));
+        throw new Error(err.error || 'Gagal menyimpan perubahan');
+      }
+      return res.json();
+    }
+
+
+    function makeAccordionItem(item, type) {
+      // KARTU: putih, rounded, border, shadow
+      const card = document.createElement('div');
+      card.className = 'bg-white rounded-2xl border border-gray-200 shadow-sm';
+
+      // HEADER
+      const header = document.createElement('button');
+      header.type = 'button';
+      header.className = 'w-full text-left px-5 py-4 flex items-start justify-between gap-6';
+      header.setAttribute('aria-expanded', 'false');
+
+      const title = document.createElement('h3');
+      title.className = 'text-base md:text-lg font-medium text-gray-900';
+      title.textContent = item.title;
+
+      const actions = document.createElement('div');
+      actions.className = 'flex items-center gap-2 shrink-0';
+
+      // Tombol Edit (hanya saat admin; pakai kelas .btn-del supaya ikut toggle)
+      const editBtn = document.createElement('button');
+      editBtn.textContent = 'Edit';
+      editBtn.className = 'btn-del hidden px-3 py-1.5 text-xs rounded-full border border-violet-200 text-violet-700 hover:bg-violet-50';
+
+      // Tombol Hapus (hanya saat admin)
+      const delBtn = document.createElement('button');
+      delBtn.textContent = 'Hapus';
+      delBtn.className = 'btn-del hidden px-3 py-1.5 text-xs rounded-full border border-rose-200 text-rose-700 hover:bg-rose-50';
+
+      // Chevron bulat
+      const chevronWrap = document.createElement('span');
+      chevronWrap.className = 'inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition-all';
+      const chevron = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      chevron.setAttribute('viewBox','0 0 24 24');
+      chevron.setAttribute('fill','none');
+      chevron.setAttribute('stroke','currentColor');
+      chevron.setAttribute('stroke-width','2');
+      chevron.classList.add('h-4','w-4','transition-transform','duration-200');
+      chevron.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/>';
+      chevronWrap.appendChild(chevron);
+
+      actions.appendChild(editBtn);
+      actions.appendChild(delBtn);
+      actions.appendChild(chevronWrap);
+
+      header.appendChild(title);
+      header.appendChild(actions);
+
+      // BODY (view mode) — dengan garis pemisah dekat judul & jarak ke isi
+      const body = document.createElement('div');
+      body.className = 'hidden px-5 pb-5 text-gray-700 border-t border-gray-300 pt-3';
+      body.innerHTML = `<p class="whitespace-pre-line leading-relaxed">${item.content}</p>`;
+
+      // BODY (edit mode) — inline editor
+      const editor = document.createElement('div');
+      editor.className = 'hidden px-5 pb-5 text-gray-700 border-t border-gray-300 pt-3';
+      editor.innerHTML = `
+        <div class="space-y-3">
+          <input type="text" class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500" value="${item.title.replace(/"/g,'&quot;')}" />
+          <textarea rows="5" class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500">${item.content}</textarea>
+          <div class="flex items-center gap-3">
+            <button class="save px-3 py-2 text-sm rounded-lg bg-violet-600 text-white hover:bg-violet-700">Simpan</button>
+            <button class="cancel px-3 py-2 text-sm rounded-lg bg-gray-200 hover:bg-gray-300">Batal</button>
+          </div>
+        </div>
+      `;
+      const [titleInput, contentInput] = editor.querySelectorAll('input, textarea');
+      const saveBtn = editor.querySelector('.save');
+      const cancelBtn = editor.querySelector('.cancel');
+
+      // Toggle buka/tutup (klik header kecuali tombol edit/hapus)
+      header.addEventListener('click', (e) => {
+        if (e.target === editBtn || e.target === delBtn) return;
+        const expanded = header.getAttribute('aria-expanded') === 'true';
+        header.setAttribute('aria-expanded', String(!expanded));
+
+        // kalau sedang edit, jangan tampilkan body view
+        const isEditing = !editor.classList.contains('hidden');
+        if (!isEditing) body.classList.toggle('hidden');
+
+        chevron.classList.toggle('rotate-180', !expanded);
+        if (!expanded) {
+          chevronWrap.classList.remove('bg-gray-100','text-gray-500');
+          chevronWrap.classList.add('bg-green-100','text-green-600');
+        } else {
+          chevronWrap.classList.remove('bg-green-100','text-green-600');
+          chevronWrap.classList.add('bg-gray-100','text-gray-500');
+        }
+      });
+
+      // Edit → masuk edit mode
+      editBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        body.classList.add('hidden');
+        editor.classList.remove('hidden');
+        header.setAttribute('aria-expanded', 'true');
+        chevron.classList.add('rotate-180');
+        chevronWrap.classList.remove('bg-gray-100','text-gray-500');
+        chevronWrap.classList.add('bg-green-100','text-green-600');
+      });
+
+      // Batal edit → kembali ke view
+      cancelBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        titleInput.value = item.title;
+        contentInput.value = item.content;
+        editor.classList.add('hidden');
+        body.classList.remove('hidden');
+      });
+
+      // Simpan edit (PUT)
+      saveBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const newTitle = titleInput.value.trim();
+        const newContent = contentInput.value.trim();
+        if (!newTitle || !newContent) return alert('Isi judul & konten');
+
+        try {
+          saveBtn.disabled = true; saveBtn.textContent = 'Menyimpan...';
+          await updateItem(type, item.id, newTitle, newContent);
+          await fetchData(); // reload data + render ulang
+        } catch (err) {
+          alert(err.message);
+        } finally {
+          saveBtn.disabled = false; saveBtn.textContent = 'Simpan';
+        }
+      });
+
+      // Hapus (DELETE)
+      delBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (!confirm('Yakin hapus item ini?')) return;
+        try {
+          const res = await fetch(`/${type}/${item.id}`, { method:'DELETE', headers: headersJSON() });
+          if (!res.ok) {
+            const err = await res.json().catch(()=>({error:'Gagal'}));
+            throw new Error(err.error || 'Gagal hapus');
+          }
+          await fetchData();
+        } catch (err) { alert(err.message); }
+      });
+
+      card.appendChild(header);
+      card.appendChild(body);
+      card.appendChild(editor);
+      return card;
+    }
+
+
+
+    function renderLists() {
+      const q = (searchInput.value || '').toLowerCase().trim();
+
+      const fFAQ = faqData.filter(i => i.title.toLowerCase().includes(q) || i.content.toLowerCase().includes(q));
+      const fGlo = glosariumData.filter(i => i.title.toLowerCase().includes(q) || i.content.toLowerCase().includes(q));
+
+      // const fFAQ = faqData.filter(i => i.title.toLowerCase().includes(q));
+      // const fGlo = glosariumData.filter(i => i.title.toLowerCase().includes(q));
+
+      faqResults.innerHTML = '';
+      glosariumResults.innerHTML = '';
+
+      if (fFAQ.length === 0) {
+        faqResults.innerHTML = `<div class="py-6 px-3 text-gray-500">Tidak ada hasil FAQ.</div>`;
+      } else {
+        fFAQ.forEach(item => faqResults.appendChild(makeAccordionItem(item, 'faq')));
+      }
+
+      if (fGlo.length === 0) {
+        glosariumResults.innerHTML = `<div class="py-6 px-3 text-gray-500">Tidak ada istilah glosarium.</div>`;
+      } else {
+        fGlo.forEach(item => glosariumResults.appendChild(makeAccordionItem(item, 'glossary')));
+      }
+
+      renderAdminState();
+    }
+
+    // Events
+    searchInput.addEventListener('input', renderLists);
+
+    document.getElementById('faqAddBtn')?.addEventListener('click', async () => {
+      const title = (document.getElementById('faqTitle').value || '').trim();
+      const content = (document.getElementById('faqContent').value || '').trim();
+      if (!title || !content) return alert('Isi pertanyaan & jawaban');
+      try {
+        const res = await fetch('/faq', { method:'POST', headers: headersJSON(), body: JSON.stringify({ title, content }) });
+        if (!res.ok) throw new Error((await res.json()).error || 'Gagal menambah FAQ');
+        document.getElementById('faqTitle').value = '';
+        document.getElementById('faqContent').value = '';
+        await fetchData();
+      } catch (e) { alert(e.message); }
+    });
+
+    document.getElementById('gloAddBtn')?.addEventListener('click', async () => {
+      const title = (document.getElementById('gloTitle').value || '').trim();
+      const content = (document.getElementById('gloContent').value || '').trim();
+      if (!title || !content) return alert('Isi istilah & definisi');
+      try {
+        const res = await fetch('/glossary', { method:'POST', headers: headersJSON(), body: JSON.stringify({ title, content }) });
+        if (!res.ok) throw new Error((await res.json()).error || 'Gagal menambah glosarium');
+        document.getElementById('gloTitle').value = '';
+        document.getElementById('gloContent').value = '';
+        await fetchData();
+      } catch (e) { alert(e.message); }
+    });
+
+    // Init
+    fetchData();
+    renderAdminState(); // sinkron visibilitas tombol hapus jika key tersimpan
+
+    localStorage.removeItem('adminKey'); 
+    // refresh halaman, login admin lagi dengan key terbaru
+  </script>
+</body>
+</html>
