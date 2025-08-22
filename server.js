@@ -4,7 +4,6 @@ const express = require('express');
 const mysql = require('mysql2/promise');
 const path = require('path');
 const fs = require('fs');
-
 const app = express();
 const PORT = process.env.PORT || 4000;
 
@@ -167,6 +166,19 @@ if (fs.existsSync(INDEX_HTML)) {
   app.get('/', (_req, res) => res.sendFile(INDEX_HTML));
 }
 
+if ((process.env.DB_SSL || '').toLowerCase() === 'true') {
+  // beberapa host MySQL mewajibkan TLS; jika CA tidak disediakan, non‑verify aman untuk dev
+  dbCfg.ssl = { rejectUnauthorized: false };
+}
+
+// … endpoint /health, /faq, /glossary, dan CRUD kamu tetap sama …
+
+app.get('/health', async (_req, res) => {
+  try { const [r] = await pool.query('SELECT 1 ok'); res.json({ ok: !!r }); }
+  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+app.listen(PORT, () => console.log(`Server on :${PORT}`));
 
 app.listen(PORT, () => {
   console.log(`Server berjalan di http://localhost:${PORT}`);
