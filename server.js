@@ -28,18 +28,6 @@ const DB_NAME = process.env.DB_NAME || process.env.MYSQLDATABASE;
 const DB_PORT = Number(process.env.DB_PORT || process.env.MYSQLPORT || 3306);
 const DB_SSL  = String(process.env.DB_SSL || '').toLowerCase() === 'true';
 
-// pool koneksi
-const pool = mysql.createPool({
-  host: DB_HOST,
-  user: DB_USER,
-  password: DB_PASS,
-  database: DB_NAME,
-  port: DB_PORT,
-  waitForConnections: true,
-  connectionLimit: 10,
-  charset: 'utf8mb4',
-  ssl: DB_SSL ? { rejectUnauthorized: false } : undefined  // Railway MySQL biasanya TIDAK perlu SSL
-});
 
 // middleware admin
 const ADMIN_KEY = process.env.ADMIN_KEY || 'changeme-admin-key';
@@ -184,15 +172,3 @@ app.listen(PORT, () => {
   console.log(`Server berjalan di :${PORT}`);
   console.log(`Admin key (header x-admin-key): ${ADMIN_KEY ? '[set]' : '[default]'}`);
 });
-
-console.log('DB CONFIG ->', {
-  host: DB_HOST,
-  port: DB_PORT,
-  user: DB_USER,
-  db: DB_NAME,
-  ssl: DB_SSL
-});
-
-pool.query('SELECT 1 AS ok')
-  .then(([r]) => console.log('DB ping ok:', r[0]))
-  .catch(err => console.error('DB connect error:', err.code, err.message));
