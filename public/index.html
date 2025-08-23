@@ -80,6 +80,11 @@
           <div id="detailView">
             <h1 id="detailTitle" class="text-2xl font-semibold"></h1>
             <p id="detailBody" class="mt-3 text-gray-700"></p>
+
+            <!-- 🔽 Tambahan: gambar FAQ -->
+            <img id="detailImage" class="mt-4 hidden rounded-xl border border-gray-200 shadow-sm max-h-64 object-contain"
+                alt="Gambar FAQ">
+
             <div id="detailLinksWrap" class="mt-6 space-y-2 hidden">
               <div class="text-sm font-semibold text-gray-700">Tautan terkait</div>
               <ul id="detailLinks" class="list-inside list-disc text-sm text-emerald-700"></ul>
@@ -94,6 +99,12 @@
           <form id="detailEditForm" class="hidden mt-2 space-y-3">
             <input id="editTitle" class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500" />
             <textarea id="editContent" rows="6" class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"></textarea>
+
+            <!-- 🔽 Tambahan: URL Gambar -->
+            <input id="editImageUrl" type="url"
+                  class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  placeholder="Image URL (opsional)">
+
             <div class="flex items-center gap-2">
               <button id="detailSaveBtn" class="px-3 py-2 text-sm rounded-lg bg-violet-600 text-white hover:bg-violet-700" type="submit">Simpan</button>
               <button id="detailCancelBtn" class="px-3 py-2 text-sm rounded-lg bg-gray-200 hover:bg-gray-300" type="button">Batal</button>
@@ -122,6 +133,13 @@
               <h3 class="font-semibold mb-2 text-violet-700">Tambah FAQ</h3>
               <input id="faqTitle" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-violet-500" placeholder="Pertanyaan (title)" />
               <textarea id="faqContent" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-violet-500" rows="4" placeholder="Jawaban (content)"></textarea>
+
+              <!-- 🔽 Tambahan: URL Gambar (opsional) -->
+              <input id="faqImageUrl" type="url"
+                    class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    placeholder="Image URL (opsional, bisa direct link Google Drive)" />
+                    <p class="text-sm text-gray-500 mt-1">https://drive.google.com/uc?export=view&id=FILE_ID</p>
+
               <button id="faqAddBtn" class="px-3 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 w-full">Tambah FAQ</button>
             </div>
 
@@ -139,15 +157,18 @@
         <button onclick="toggleLiveAssistant()" class="rounded-2xl border bg-white px-5 py-2 shadow-sm ml-auto text-xl hover:text-green-700 md:ml-6">
           Live Assistance
         </button>
-          <!-- Kotak Live Assistance (disembunyikan awalnya) -->
+
+        <!-- Kotak Live Assistance -->
         <div id="liveAssistantBox" class="hidden mt-4 rounded-2xl border bg-violet-50 p-5 shadow-sm">
-          <h3 class="text-lg font-semibold">Live Assistance</h3>
-          <p class="mt-1 text-sm text-gray-600">Butuh bantuan? Kami siap membantu!</p>
-          <textarea id="assistantMsg" placeholder="Ketik pesan…" rows="6" class="mt-3 w-full rounded-xl border px-3 py-2 outline-none"></textarea>
-          <button onclick="sendToWhatsApp()" class="mt-3 w-full rounded-xl bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">
-            Kirim via WhatsApp
+          <h3 class="text-lg font-semibold">Live Assistance via Email</h3>
+          <p class="mt-1 text-sm text-gray-600">Butuh bantuan? Kirim pertanyaan Anda melalui email.</p>
+          <input id="assistantSubject" placeholder="Subjek email" class="mt-3 w-full rounded-xl border px-3 py-2 outline-none" />
+          <textarea id="assistantMsg" placeholder="Tulis pesan Anda…" rows="6" class="mt-3 w-full rounded-xl border px-3 py-2 outline-none"></textarea>
+          <button onclick="sendToEmail()" class="mt-3 w-full rounded-xl bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">
+            Kirim via Email
           </button>
         </div>
+
       </aside>
     </main>
 
@@ -239,6 +260,8 @@
     const editContent = document.getElementById('editContent');
     const detailSaveBtn = document.getElementById('detailSaveBtn');
     const detailCancelBtn = document.getElementById('detailCancelBtn');
+    const detailImage = document.getElementById('detailImage');
+    const editImageUrl = document.getElementById('editImageUrl');
     const copyLinkBtn = document.getElementById('copyLinkBtn');
     const copyLinkStatus = document.getElementById('copyLinkStatus');
 
@@ -301,6 +324,7 @@
           id: r.id ?? r.ID ?? r.Id ?? null,
           title: r.title ?? r.question ?? '',
           content: r.content ?? r.answer ?? '',
+          image_url: r.image_url || null,
           category: 'FAQ',
           type: 'faq'
         }));
@@ -417,6 +441,15 @@
       detailCat.textContent = item.category || '';
       detailTitle.textContent = item.title || '';
       detailBody.textContent = item.content || '';
+
+      if (item.type === 'faq' && item.image_url) {
+        detailImage.src = item.image_url;
+        detailImage.classList.remove('hidden');
+      } else {
+        detailImage.src = '';
+        detailImage.classList.add('hidden');
+      }
+
       detailLinksWrap.classList.add('hidden');
       detailLinks.innerHTML = '';
       renderAdminState();               // sync tombol admin
@@ -508,15 +541,25 @@
     document.getElementById('faqAddBtn')?.addEventListener('click', async () => {
       const title = (document.getElementById('faqTitle').value || '').trim();
       const content = (document.getElementById('faqContent').value || '').trim();
+      const image_url = (document.getElementById('faqImageUrl').value || '').trim(); // ✅ ambil gambar
       if (!title || !content) return alert('Isi pertanyaan & jawaban');
+
       try {
-        const res = await fetch('/faq', { method:'POST', headers: headersJSON(), body: JSON.stringify({ title, content }) });
+        const res = await fetch('/faq', {
+          method:'POST',
+          headers: headersJSON(),
+          body: JSON.stringify({ title, content, image_url })   // ✅ kirim ke server
+        });
         if (!res.ok) throw new Error((await res.json()).error || 'Gagal menambah FAQ');
+
+        // kosongkan form
         document.getElementById('faqTitle').value = '';
         document.getElementById('faqContent').value = '';
+        document.getElementById('faqImageUrl').value = '';
         await doSearch();
       } catch (e) { alert(e.message); }
     });
+
 
     document.getElementById('gloAddBtn')?.addEventListener('click', async () => {
       const title = (document.getElementById('gloTitle').value || '').trim();
@@ -536,6 +579,7 @@
       if (!activeItem) return;
       editTitle.value = activeItem.title || '';
       editContent.value = activeItem.content || '';
+      editImageUrl.value = activeItem.image_url || '';
       detailView.classList.add('hidden');
       detailEditForm.classList.remove('hidden');
     });
@@ -546,13 +590,22 @@
     detailEditForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!activeItem) return;
+
       const newTitle = editTitle.value.trim();
       const newContent = editContent.value.trim();
+      const newImage = (editImageUrl.value || '').trim();   // ✅ ambil gambar
+
       if (!newTitle || !newContent) return alert('Judul & Konten wajib diisi');
+
       try {
         const url = `/${activeItem.type}/${activeItem.id}`;
-        const res = await fetch(url, { method:'PUT', headers: headersJSON(), body: JSON.stringify({ title: newTitle, content: newContent }) });
+        const res = await fetch(url, {
+          method:'PUT',
+          headers: headersJSON(),
+          body: JSON.stringify({ title: newTitle, content: newContent, image_url: newImage }) // ✅ kirim ke server
+        });
         if (!res.ok) throw new Error((await res.json()).error || 'Gagal menyimpan perubahan');
+
         await doSearch();
         detailEditForm.classList.add('hidden');
         detailView.classList.remove('hidden');
@@ -580,20 +633,20 @@
       box.classList.toggle("hidden");
     }
 
-    // Simulasi kirim pesan (mock)
-    function sendToWhatsApp() {
+    function sendToEmail() {
+      const subject = document.getElementById("assistantSubject").value.trim();
       const message = document.getElementById("assistantMsg").value.trim();
-      if (!message) {
-        alert("Pesan tidak boleh kosong.");
+
+      if (!subject && !message) {
+        alert("Isi subjek atau pesan terlebih dahulu.");
         return;
       }
 
-      const phoneNumber = "6289609272101"; // Ganti dengan nomor admin WA (gunakan format internasional tanpa +)
-      const encodedMessage = encodeURIComponent(message);
-      const waLink = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
-
-      window.open(waLink, "_blank"); // Buka WhatsApp di tab baru
+      const email = "rashadfajar@gmail.com"; // ganti dengan alamat email tujuan
+      const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
+      window.location.href = mailtoLink;
     }
+
 
     // ===== Salin tautan detail =====
     copyLinkBtn.addEventListener('click', async () => {

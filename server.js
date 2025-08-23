@@ -69,7 +69,7 @@ app.get('/health', async (_req, res) => {
 app.get('/faq', async (_req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT id, question AS title, answer AS content FROM faq ORDER BY id ASC'
+      'SELECT id, question AS title, answer AS content, image_url FROM faq ORDER BY id ASC'
     );
   res.json(rows);
   } catch (e) {
@@ -91,31 +91,42 @@ app.get('/glossary', async (_req, res) => {
 });
 
 // ====== ADMIN CRUD: FAQ ======
+// POST /faq
 app.post('/faq', checkAdmin, async (req, res) => {
   try {
-    const { title, content } = req.body || {};
+    const { title, content, image_url } = req.body || {}; // <- tambahkan image_url
     if (!title || !content) return res.status(400).json({ error: 'title & content wajib' });
-    const [r] = await pool.execute('INSERT INTO faq (question, answer) VALUES (?,?)', [title, content]);
-    res.status(201).json({ id: r.insertId, title, content });
+
+    const [r] = await pool.execute(
+      'INSERT INTO faq (question, answer, image_url) VALUES (?,?,?)',
+      [title, content, image_url || null]
+    );
+    res.status(201).json({ id: r.insertId, title, content, image_url: image_url || null });
   } catch (e) {
     console.error('FAQ POST error:', e);
     res.status(500).json({ error: 'Gagal menambah FAQ' });
   }
 });
 
+// PUT /faq/:id
 app.put('/faq/:id', checkAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, content } = req.body || {};
+    const { title, content, image_url } = req.body || {}; // <- tambahkan image_url
     if (!title || !content) return res.status(400).json({ error: 'title & content wajib' });
-    const [r] = await pool.execute('UPDATE faq SET question=?, answer=? WHERE id=?', [title, content, id]);
+
+    const [r] = await pool.execute(
+      'UPDATE faq SET question=?, answer=?, image_url=? WHERE id=?',
+      [title, content, image_url || null, id]
+    );
     if (r.affectedRows === 0) return res.status(404).json({ error: 'FAQ tidak ditemukan' });
-    res.json({ id: Number(id), title, content });
+    res.json({ id: Number(id), title, content, image_url: image_url || null });
   } catch (e) {
     console.error('FAQ PUT error:', e);
     res.status(500).json({ error: 'Gagal memperbarui FAQ' });
   }
 });
+
 
 app.delete('/faq/:id', checkAdmin, async (req, res) => {
   try {
@@ -173,3 +184,15 @@ app.listen(PORT, () => {
   console.log(`Server berjalan di :${PORT}`);
   console.log(`Admin key (header x-admin-key): ${ADMIN_KEY ? '[set]' : '[default]'}`);
 });
+
+console.log('DB CONFIG ->', {
+  host: DB_HOST,
+  port: DB_PORT,
+  user: DB_USER,
+  db: DB_NAME,
+  ssl: DB_SSL
+});
+
+pool.query('SELECT 1 AS ok')
+  .then(([r]) => console.log('DB ping ok:', r[0]))
+  .catch(err => console.error('DB connect error:', err.code, err.message));
