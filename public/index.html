@@ -52,9 +52,9 @@
 
 
     <!-- Grid Utama -->
-    <main class="flex-grow grid grid-cols-1 md:grid-cols-12 gap-4">
+    <main  class="flex-grow grid grid-cols-1 md:grid-cols-12 gap-4">
       <!-- Kiri: Hasil Pencarian + Pagination -->
-      <section class="order-2 md:order-1 md:col-span-4">
+      <section id="leftCol" class="order-2 md:order-1 md:col-span-3">
         <div id="resultsWrap" class="hidden rounded-2xl border bg-white p-2 shadow-sm">
           <div id="resultsMeta" class="px-3 py-2 text-sm text-gray-500"></div>
           <ul id="resultsList" class="divide-y" tabindex="0" aria-label="Daftar hasil"></ul>
@@ -64,7 +64,7 @@
       </section>
 
       <!-- Tengah: Detail -->
-      <section class="order-3 md:order-2 md:col-span-5">
+      <section id="middleCol" class="order-3 md:order-2 md:col-span-5">
         <div id="detailWrap" class="hidden rounded-2xl border bg-white p-6 shadow-sm">
           <div class="mb-2 flex items-start justify-between gap-3">
             <div class="flex items-center gap-2">
@@ -119,61 +119,125 @@
       </section>
 
       <!-- Kanan: Tambahkan Informasi + Assistance -->
-      <aside id="rightAside" class="hidden order-1 md:order-3 md:col-span-3 space-y-4 ">
-        <button onclick="toggleAdminBar()" title="Mode Admin" class=" rounded-2xl border bg-white px-5 py-2 shadow-sm ml-auto text-xl hover:text-green-700 md:ml-6">+Tambah Informasi</button>
+      <aside id="rightAside" class="hidden order-1 md:order-3 md:col-span-4 space-y-4">
+        <!-- Toggle panel admin -->
+        <button
+          onclick="toggleAdminBar()"
+          title="Mode Admin"
+          class="rounded-2xl border bg-white px-5 py-2 shadow-sm ml-auto text-xl hover:text-green-700 md:ml-6">
+          +Tambah Informasi
+        </button>
+
         <!-- Admin Bar (tersembunyi di awal) -->
         <div id="adminBar" class="hidden mb-8 p-4 bg-violet-50 border border-violet-200 rounded-xl">
           <div class="flex flex-wrap items-center gap-3">
-            <input id="adminKeyInput" type="password" placeholder="Masukkan Admin Key"
-                  class="flex-1 min-w-[220px] p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500">
-            <button id="adminLoginBtn" class="px-3 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700">Login</button>
-            <button id="adminLogoutBtn" class="px-3 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 hidden">Logout</button>
+            <!-- ROW input + eye dibungkus satu wrapper agar mudah di-hide -->
+            <div id="adminKeyRow" class="relative flex-1 min-w-[220px] max-w-full">
+              <input
+                id="adminKeyInput"
+                type="password"
+                placeholder="Masukkan Admin Key"
+                class="w-full p-2 pr-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                aria-label="Admin key"
+              />
+              <button
+                type="button"
+                id="togglePwdBtn"
+                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                title="Lihat/Sembunyikan password"
+                aria-label="Lihat atau sembunyikan password">
+                <!-- ikon mata -->
+                <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                    viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              </button>
+            </div>
+
+            <button id="adminLoginBtn"
+                    class="px-3 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700">
+              Login
+            </button>
+
+            <button id="adminLogoutBtn"
+                    class="px-3 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 hidden">
+              Logout
+            </button>
+
             <span id="adminStatus" class="text-sm text-gray-700"></span>
           </div>
 
           <!-- Admin Forms -->
-          <div id="adminForms" class="hidden mt-4 grid md:grid-rows-2 gap-4">
-            <!-- Add FAQ -->
-            <div class="bg-white p-4 border rounded-xl shadow-sm">
-              <h3 class="font-semibold mb-2 text-violet-700">Tambah FAQ</h3>
-              <input id="faqTitle" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-violet-500" placeholder="Pertanyaan (title)" />
-              <textarea id="faqContent" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-violet-500" rows="4" placeholder="Jawaban (content)"></textarea>
+          <div id="adminForms" class="hidden mt-4 grid gap-4">
+            <!-- Tambah FAQ -->
+            <div class="bg-white p-4 border rounded-xl shadow-sm w-full">
+              <h3 class="font-semibold mb-3 text-violet-700">Tambah FAQ</h3>
 
-              <!-- URL Gambar (opsional) -->
+              <input id="faqTitle"
+                    class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    placeholder="Pertanyaan (title)" />
+
+              <textarea id="faqContent" rows="4"
+                        class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        placeholder="Jawaban (content)"></textarea>
+
               <input id="faqImageUrl" type="url"
-                class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                placeholder="Image URL (opsional, bisa direct link Google Drive)" />
-              <!-- URL Link (opsional) -->
-              <input id="faqUrlLink" type="url"
-                class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                placeholder="URL Link (opsional, mis. berkas panduan)" />
-              <p class="text-xs text-gray-500">Drive direct: https://lh3.googleusercontent.com/d/FILE_ID=w1200</p>
+                    class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    placeholder="Image URL (opsional)" />
 
-              <button id="faqAddBtn" class="px-3 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 w-full">Tambah FAQ</button>
+              <input id="faqUrlLink" type="url"
+                    class="w-full p-2 border rounded mb-3 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    placeholder="URL Link (opsional)" />
+
+              <p class="mb-3 text-xs text-gray-500">
+                Drive direct: https://lh3.googleusercontent.com/d/FILE_ID=w1200
+              </p>
+
+              <button id="faqAddBtn"
+                      class="w-full px-3 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700">
+                Tambah FAQ
+              </button>
             </div>
 
-            <!-- Add Glossary -->
-            <div class="bg-white p-4 border rounded-xl shadow-sm">
-              <h3 class="font-semibold mb-2 text-green-700">Tambah Glosarium</h3>
-              <input id="gloTitle" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Istilah (title)" />
-              <textarea id="gloContent" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500" rows="4" placeholder="Definisi (content)"></textarea>
+            <!-- Tambah Glosarium -->
+            <div class="bg-white p-4 border rounded-xl shadow-sm w-full">
+              <h3 class="font-semibold mb-3 text-green-700">Tambah Glosarium</h3>
 
-              <!-- Image & URL Link -->
+              <input id="gloTitle"
+                    class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="Istilah (title)" />
+
+              <textarea id="gloContent" rows="4"
+                        class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                        placeholder="Definisi (content)"></textarea>
+
               <input id="gloImageUrl" type="url"
-                class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                placeholder="Image URL (opsional)" />
-              <input id="gloUrlLink" type="url"
-                class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                placeholder="URL Link (opsional)" />
-              <p class="text-xs text-gray-500">Drive direct: https://lh3.googleusercontent.com/d/FILE_ID=w1200</p>
+                    class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="Image URL (opsional)" />
 
-              <button id="gloAddBtn" class="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 w-full">Tambah Istilah</button>
+              <input id="gloUrlLink" type="url"
+                    class="w-full p-2 border rounded mb-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="URL Link (opsional)" />
+
+              <p class="mb-3 text-xs text-gray-500">
+                Drive direct: https://lh3.googleusercontent.com/d/FILE_ID=w1200
+              </p>
+
+              <button id="gloAddBtn"
+                      class="w-full px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                Tambah Istilah
+              </button>
             </div>
           </div>
-          <!-- <p class="mt-3 text-xs text-gray-500">Tip: tekan <kbd class="px-1 py-0.5 bg-gray-200 rounded">Ctrl</kbd> + <kbd class="px-1 py-0.5 bg-gray-200 rounded">Alt</kbd> + <kbd class="px-1 py-0.5 bg-gray-200 rounded">A</kbd> untuk menampilkan/menyembunyikan panel admin.</p> -->
         </div>
+
+
         <!-- Tombol Live Assistance -->
-        <button onclick="toggleLiveAssistant()" class="rounded-2xl border bg-white px-5 py-2 shadow-sm ml-auto text-xl hover:text-green-700 md:ml-6">
+        <button onclick="toggleLiveAssistant()"
+                class="rounded-2xl border bg-white px-5 py-2 shadow-sm ml-auto text-xl hover:text-green-700 md:ml-6">
           Live Assistance
         </button>
 
@@ -181,13 +245,15 @@
         <div id="liveAssistantBox" class="hidden mt-4 rounded-2xl border bg-violet-50 p-5 shadow-sm">
           <h3 class="text-lg font-semibold">Live Assistance via Email</h3>
           <p class="mt-1 text-sm text-gray-600">Butuh bantuan? Kirim pertanyaan Anda melalui email.</p>
-          <input id="assistantSubject" placeholder="Subjek email" class="mt-3 w-full rounded-xl border px-3 py-2 outline-none" />
-          <textarea id="assistantMsg" placeholder="Tulis pesan Anda…" rows="6" class="mt-3 w-full rounded-xl border px-3 py-2 outline-none"></textarea>
-          <button onclick="sendToEmail()" class="mt-3 w-full rounded-xl bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">
+          <input id="assistantSubject" placeholder="Subjek email"
+                class="mt-3 w-full rounded-xl border px-3 py-2 outline-none" />
+          <textarea id="assistantMsg" placeholder="Tulis pesan Anda…"
+                    rows="6" class="mt-3 w-full rounded-xl border px-3 py-2 outline-none"></textarea>
+          <button onclick="sendToEmail()"
+                  class="mt-3 w-full rounded-xl bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">
             Kirim via Email
           </button>
         </div>
-
       </aside>
     </main>
 
@@ -207,47 +273,86 @@
     const adminLogoutBtn = document.getElementById('adminLogoutBtn');
     const adminStatus = document.getElementById('adminStatus');
     const adminForms = document.getElementById('adminForms');
+    const adminKeyRow  = document.getElementById('adminKeyRow');
+    const togglePwdBtn = document.getElementById('togglePwdBtn');
+    const adminKeyInputEl = document.getElementById('adminKeyInput');
+
+    // toggle show/hide password
+    togglePwdBtn?.addEventListener('click', () => {
+      const showing = adminKeyInputEl.type === 'text';
+      adminKeyInputEl.type = showing ? 'password' : 'text';
+      document.getElementById('eyeIcon')?.classList.toggle('opacity-60', !showing);
+    });
 
     let adminKey = localStorage.getItem('adminKey') || null;
     const isAdmin = () => !!adminKey;
-    function toggleAdminBar(force) {
-      if (typeof force === 'boolean') adminBar.classList.toggle('hidden', !force);
-      else adminBar.classList.toggle('hidden');
-    }
+
     function setAdminKey(key) {
       adminKey = key || null;
       if (key) localStorage.setItem('adminKey', key);
       else localStorage.removeItem('adminKey');
       renderAdminState();
     }
+
     function renderAdminState() {
       const detailActions = document.getElementById('detailActions');
+
       if (isAdmin()) {
+        // sembunyikan input + eye + tombol login
+        adminKeyRow?.classList.add('hidden');
+        adminLoginBtn?.classList.add('hidden');
+        adminLogoutBtn?.classList.remove('hidden');
         adminStatus.textContent = 'Mode Admin aktif';
-        adminLoginBtn.classList.add('hidden');
-        adminLogoutBtn.classList.remove('hidden');
-        adminKeyInput.classList.add('hidden');
-        adminForms.classList.remove('hidden');
+
+        adminForms?.classList.remove('hidden');
+        adminKeyInputEl.value = '';               // bersihkan input
+        adminKeyInputEl.type  = 'password';       // reset type
         detailActions?.classList.remove('hidden');
       } else {
+        adminKeyRow?.classList.remove('hidden');
+        adminLoginBtn?.classList.remove('hidden');
+        adminLogoutBtn?.classList.add('hidden');
         adminStatus.textContent = '';
-        adminLoginBtn.classList.remove('hidden');
-        adminLogoutBtn.classList.add('hidden');
-        adminKeyInput.classList.remove('hidden');
-        adminForms.classList.add('hidden');
+
+        adminForms?.classList.add('hidden');
         detailActions?.classList.add('hidden');
       }
     }
-    adminLoginBtn?.addEventListener('click', () => {
-      const key = adminKeyInput.value.trim();
+
+    // validasi admin key ke server (gunakan header x-admin-key)
+    adminLoginBtn?.addEventListener('click', async () => {
+      const key = adminKeyInputEl.value.trim();
       if (!key) return alert('Masukkan admin key');
-      setAdminKey(key);
+
+      try {
+        const res = await fetch('/health', { headers: { 'x-admin-key': key } });
+        if (res.status === 401) {
+          alert('Admin key salah');
+          return;
+        }
+        setAdminKey(key); // hanya set jika server tidak 401
+      } catch (e) {
+        alert('Gagal konek ke server');
+      }
     });
-    adminLogoutBtn?.addEventListener('click', () => setAdminKey(null));
+
+    adminLogoutBtn?.addEventListener('click', () => {
+      setAdminKey(null);
+      // ✅ reset tampilan input password
+      adminKeyInputEl.type = 'password';
+      document.getElementById('eyeIcon')?.classList.remove('opacity-60');
+    });
+
+
+
     window.addEventListener('keydown', (e) => {
-      if (e.ctrlKey && e.altKey && (e.key === 'a' || e.key === 'A')) { e.preventDefault(); toggleAdminBar(); }
+      if (e.ctrlKey && e.altKey && (e.key === 'a' || e.key === 'A')) {
+        e.preventDefault();
+        toggleAdminBar();
+      }
     });
     if (new URLSearchParams(location.search).get('admin') === '1') toggleAdminBar(true);
+
 
     const headersJSON = () => {
       const h = { 'Content-Type': 'application/json' };
@@ -542,10 +647,43 @@
       replaceRoute(params);
     }
 
+    function applyAsideLayout() {
+      const aside = document.getElementById('rightAside');
+      const middle = document.getElementById('middleCol');
+      const left = document.getElementById('leftCol');
+
+      // ketika aside disembunyikan → tengah melebar (4 → 8)
+      if (aside.classList.contains('hidden')) {
+        left.classList.remove('md:col-span-3')
+        left.classList.add('md:col-span-4');
+        middle.classList.remove('md:col-span-5');
+        middle.classList.add('md:col-span-8');
+      } else {
+        // ketika aside tampil → tengah kembali 4
+        left.classList.remove('md:col-span-4')
+        left.classList.add('md:col-span-3');
+        middle.classList.remove('md:col-span-8');
+        middle.classList.add('md:col-span-5');
+      }
+    }
+
     function toggleAside() {
       const aside = document.getElementById("rightAside");
       aside.classList.toggle("hidden");
+      applyAsideLayout(); 
     }
+
+    // ✅ NEW: show/hide panel Admin Bar
+    function toggleAdminBar(force) {
+      const el = document.getElementById('adminBar');
+      if (!el) return;
+      if (typeof force === 'boolean') {
+        el.classList.toggle('hidden', !force);
+      } else {
+        el.classList.toggle('hidden');
+      }
+    }
+
 
 
     // ===== Events =====
@@ -717,7 +855,7 @@
 
 
     // ===== Salin tautan detail =====
-    copyLinkBtn.addEventListener('click', async () => {
+    copyLinkBtn?.addEventListener('click', async () => {
       if (!activeItem) return;
       const params = stateToParams({ q: searchInput.value.trim(), page: currentPage, id: activeItem.id, type: activeItem.type });
       const url = `${location.origin}${location.pathname}?${params}`;
@@ -760,6 +898,7 @@
       if (q || id){ replaceRoute(stateToParams({ q: searchInput.value.trim(), page: currentPage, id, type })); }
       renderAdminState();
     })();
+    applyAsideLayout();      
   </script>
 </body>
 </html>
