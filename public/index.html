@@ -446,10 +446,6 @@
 
     // ===== Fetch Data =====
     async function fetchData() {
-      // skeleton
-      resultsWrap.classList.remove('hidden');
-      resultsMeta.innerHTML = '<div class="animate-pulse h-4 bg-gray-200 rounded w-40"></div>';
-      resultsList.innerHTML = '<div class="p-3 space-y-2"><div class="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div><div class="h-4 bg-gray-200 rounded w-2/3 animate-pulse"></div><div class="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div></div>';
       try {
         const [faqRes, gloRes] = await Promise.all([ fetch('/faq'), fetch('/glossary') ]);
         if (!faqRes.ok || !gloRes.ok) throw new Error('API error');
@@ -462,7 +458,7 @@
           title: r.title ?? r.question ?? '',
           content: r.content ?? r.answer ?? '',
           image_url: r.image_url || null,
-          link_url:  r.link_url  || null,
+          url_link:  r.url_link  || null,
           category: 'FAQ',
           type: 'faq'
         }));
@@ -472,20 +468,29 @@
           title: r.title ?? r.term ?? '',
           content: r.content ?? r.definition ?? '',
           image_url: r.image_url || null,
-          link_url:  r.link_url  || null,
+          url_link:  r.url_link  || null,
           category: 'Glosarium',
           type: 'glossary'
         }));
 
-
         ITEMS = [...faqs, ...glossary].filter(x => x.id && x.title);
         ITEMS.sort((a,b) => a.title.localeCompare(b.title, 'id', { sensitivity: 'base' }));
+
+        // kalau kosong
+        if (!ITEMS.length) {
+          resultsWrap.classList.remove('hidden');
+          resultsMeta.textContent = '0 hasil';
+          resultsList.innerHTML = '<div class="p-4 text-gray-500">Tidak ada data ditemukan.</div>';
+        }
       } catch (e) {
         console.error('Gagal memuat data:', e);
         ITEMS = [];
+        resultsWrap.classList.remove('hidden');
+        resultsMeta.textContent = '';
         resultsList.innerHTML = '<div class="p-4 text-rose-600">Gagal memuat data. Coba muat ulang.</div>';
       }
     }
+
 
     function paginate(list, page, size) {
       const totalPages = Math.max(1, Math.ceil(list.length / size));
