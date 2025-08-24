@@ -69,7 +69,7 @@ app.get('/health', async (_req, res) => {
 app.get('/faq', async (_req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT id, question AS title, answer AS content, image_url FROM faq ORDER BY id ASC'
+      'SELECT id, question AS title, answer AS content, link_url, image_url FROM faq ORDER BY id ASC'
     );
   res.json(rows);
   } catch (e) {
@@ -81,7 +81,7 @@ app.get('/faq', async (_req, res) => {
 app.get('/glossary', async (_req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT id, term AS title, definition AS content FROM glossary ORDER BY id ASC'
+      'SELECT id, term AS title, definition AS content, link_url, image_url FROM glossary ORDER BY id ASC'
     );
     res.json(rows);
   } catch (e) {
@@ -94,14 +94,14 @@ app.get('/glossary', async (_req, res) => {
 // POST /faq
 app.post('/faq', checkAdmin, async (req, res) => {
   try {
-    const { title, content, image_url } = req.body || {}; // <- tambahkan image_url
+    const { title, content, link_url, image_url } = req.body || {}; // <- tambahkan image_url
     if (!title || !content) return res.status(400).json({ error: 'title & content wajib' });
 
     const [r] = await pool.execute(
-      'INSERT INTO faq (question, answer, image_url) VALUES (?,?,?)',
-      [title, content, image_url || null]
+      'INSERT INTO faq (question, answer, link_url, image_url) VALUES (?,?,?,?)',
+      [title, content, link_url || null, image_url || null]
     );
-    res.status(201).json({ id: r.insertId, title, content, image_url: image_url || null });
+    res.status(201).json({ id: r.insertId, title, content, link_url: link_url || null, image_url: image_url || null });
   } catch (e) {
     console.error('FAQ POST error:', e);
     res.status(500).json({ error: 'Gagal menambah FAQ' });
@@ -112,15 +112,15 @@ app.post('/faq', checkAdmin, async (req, res) => {
 app.put('/faq/:id', checkAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, content, image_url } = req.body || {}; // <- tambahkan image_url
+    const { title, content, link_url, image_url } = req.body || {}; // <- tambahkan image_url
     if (!title || !content) return res.status(400).json({ error: 'title & content wajib' });
 
     const [r] = await pool.execute(
-      'UPDATE faq SET question=?, answer=?, image_url=? WHERE id=?',
-      [title, content, image_url || null, id]
+      'UPDATE faq SET question=?, answer=?, link_url=?, image_url=? WHERE id=?',
+      [title, content, link_url || null, image_url || null, id]
     );
     if (r.affectedRows === 0) return res.status(404).json({ error: 'FAQ tidak ditemukan' });
-    res.json({ id: Number(id), title, content, image_url: image_url || null });
+    res.json({ id: Number(id), title, content, link_url: link_url || null, image_url: image_url || null });
   } catch (e) {
     console.error('FAQ PUT error:', e);
     res.status(500).json({ error: 'Gagal memperbarui FAQ' });
@@ -143,10 +143,10 @@ app.delete('/faq/:id', checkAdmin, async (req, res) => {
 // ====== ADMIN CRUD: GLOSSARY ======
 app.post('/glossary', checkAdmin, async (req, res) => {
   try {
-    const { title, content } = req.body || {};
+    const { title, content, link_url, image_url } = req.body || {};
     if (!title || !content) return res.status(400).json({ error: 'title & content wajib' });
-    const [r] = await pool.execute('INSERT INTO glossary (term, definition) VALUES (?,?)', [title, content]);
-    res.status(201).json({ id: r.insertId, title, content });
+    const [r] = await pool.execute('INSERT INTO glossary (term, definition, link_url, image_url) VALUES (?,?,?,?)', [title, content, link_url || null, image_url || null]);
+    res.status(201).json({ id: r.insertId, title, content, link_url: link_url || null, image_url: image_url || null});
   } catch (e) {
     console.error('Glossary POST error:', e);
     res.status(500).json({ error: 'Gagal menambah glosarium' });
@@ -156,11 +156,11 @@ app.post('/glossary', checkAdmin, async (req, res) => {
 app.put('/glossary/:id', checkAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, content } = req.body || {};
+    const { title, content, link_url, image_url } = req.body || {};
     if (!title || !content) return res.status(400).json({ error: 'title & content wajib' });
-    const [r] = await pool.execute('UPDATE glossary SET term=?, definition=? WHERE id=?', [title, content, id]);
+    const [r] = await pool.execute('UPDATE glossary SET term=?, definition=? WHERE id=?', [title, content, link_url || null, image_url || null, id]);
     if (r.affectedRows === 0) return res.status(404).json({ error: 'Istilah tidak ditemukan' });
-    res.json({ id: Number(id), title, content });
+    res.json({ id: Number(id), title, content, link_url: link_url || null, image_url: image_url || null});
   } catch (e) {
     console.error('Glossary PUT error:', e);
     res.status(500).json({ error: 'Gagal memperbarui glosarium' });

@@ -100,6 +100,11 @@
             <input id="editTitle" class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500" />
             <textarea id="editContent" rows="6" class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"></textarea>
 
+            <input id="editUrlLink" type="url"
+              class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+              placeholder="URL Link (opsional)">
+
+
             <!-- 🔽 Tambahan: URL Gambar -->
             <input id="editImageUrl" type="url"
                   class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
@@ -134,11 +139,15 @@
               <input id="faqTitle" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-violet-500" placeholder="Pertanyaan (title)" />
               <textarea id="faqContent" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-violet-500" rows="4" placeholder="Jawaban (content)"></textarea>
 
-              <!-- 🔽 Tambahan: URL Gambar (opsional) -->
+              <!-- URL Gambar (opsional) -->
               <input id="faqImageUrl" type="url"
-                    class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    placeholder="Image URL (opsional, bisa direct link Google Drive)" />
-                    <p class="text-sm text-gray-500 mt-1">https://drive.google.com/uc?export=view&id=FILE_ID</p>
+                class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                placeholder="Image URL (opsional, bisa direct link Google Drive)" />
+              <!-- URL Link (opsional) -->
+              <input id="faqUrlLink" type="url"
+                class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                placeholder="URL Link (opsional, mis. berkas panduan)" />
+              <p class="text-xs text-gray-500">Drive direct: https://lh3.googleusercontent.com/d/FILE_ID=w1200</p>
 
               <button id="faqAddBtn" class="px-3 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 w-full">Tambah FAQ</button>
             </div>
@@ -148,6 +157,16 @@
               <h3 class="font-semibold mb-2 text-green-700">Tambah Glosarium</h3>
               <input id="gloTitle" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Istilah (title)" />
               <textarea id="gloContent" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500" rows="4" placeholder="Definisi (content)"></textarea>
+
+              <!-- Image & URL Link -->
+              <input id="gloImageUrl" type="url"
+                class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="Image URL (opsional)" />
+              <input id="gloUrlLink" type="url"
+                class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="URL Link (opsional)" />
+              <p class="text-xs text-gray-500">Drive direct: https://lh3.googleusercontent.com/d/FILE_ID=w1200</p>
+
               <button id="gloAddBtn" class="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 w-full">Tambah Istilah</button>
             </div>
           </div>
@@ -307,6 +326,18 @@
       return escapeHtml(text).replace(new RegExp(`(${q})`,'gi'),'<mark class="bg-yellow-200 px-0.5 rounded">$1</mark>');
     }
 
+    function normalizeImageUrl(u){
+      if(!u) return null;
+      const s = u.trim();
+      // convert viewer link gdrive -> direct
+      const m = s.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+      if(m) return `https://drive.google.com/uc?export=view&id=${m[1]}`;
+      // allow relative (assets/xxx.png)
+      if(!/^https?:\/\//i.test(s) && !s.startsWith('/')) return `/assets/${s}`;
+      return s;
+    }
+
+
     // ===== Fetch Data =====
     async function fetchData() {
       // skeleton
@@ -325,16 +356,21 @@
           title: r.title ?? r.question ?? '',
           content: r.content ?? r.answer ?? '',
           image_url: r.image_url || null,
+          url_link:  r.url_link  || null,
           category: 'FAQ',
           type: 'faq'
         }));
+
         const glossary = (gloRows || []).map(r => ({
           id: r.id ?? r.ID ?? r.Id ?? null,
           title: r.title ?? r.term ?? '',
           content: r.content ?? r.definition ?? '',
+          image_url: r.image_url || null,
+          url_link:  r.url_link  || null,
           category: 'Glosarium',
           type: 'glossary'
         }));
+
 
         ITEMS = [...faqs, ...glossary].filter(x => x.id && x.title);
         ITEMS.sort((a,b) => a.title.localeCompare(b.title, 'id', { sensitivity: 'base' }));
@@ -442,20 +478,35 @@
       detailTitle.textContent = item.title || '';
       detailBody.textContent = item.content || '';
 
-      if (item.type === 'faq' && item.image_url) {
-        detailImage.src = item.image_url;
+      // Gambar untuk FAQ & Glosarium
+      const imgUrl = normalizeImageUrl(item.image_url);
+      if (imgUrl) {
+        detailImage.src = imgUrl;
+        detailImage.referrerPolicy = 'no-referrer';
         detailImage.classList.remove('hidden');
+        detailImage.onerror = () => detailImage.classList.add('hidden');
       } else {
         detailImage.src = '';
         detailImage.classList.add('hidden');
       }
 
-      detailLinksWrap.classList.add('hidden');
-      detailLinks.innerHTML = '';
-      renderAdminState();               // sync tombol admin
+      // Tautan terkait (url_link)
+      if (item.url_link) {
+        detailLinksWrap.classList.remove('hidden');
+        detailLinks.innerHTML = `
+          <li>
+            <a href="${item.url_link}" target="_blank" class="text-blue-600 hover:underline">Buka tautan terkait</a>
+          </li>`;
+      } else {
+        detailLinksWrap.classList.add('hidden');
+        detailLinks.innerHTML = '';
+      }
+
+      renderAdminState();
       detailEditForm.classList.add('hidden');
       detailView.classList.remove('hidden');
     }
+
 
     function showResultsUI() {
       resultsWrap.classList.remove('hidden');
@@ -541,38 +592,50 @@
     document.getElementById('faqAddBtn')?.addEventListener('click', async () => {
       const title = (document.getElementById('faqTitle').value || '').trim();
       const content = (document.getElementById('faqContent').value || '').trim();
-      const image_url = (document.getElementById('faqImageUrl').value || '').trim(); // ✅ ambil gambar
+      const image_url = (document.getElementById('faqImageUrl').value || '').trim();
+      const url_link  = (document.getElementById('faqUrlLink').value || '').trim();
       if (!title || !content) return alert('Isi pertanyaan & jawaban');
 
       try {
         const res = await fetch('/faq', {
           method:'POST',
           headers: headersJSON(),
-          body: JSON.stringify({ title, content, image_url })   // ✅ kirim ke server
+          body: JSON.stringify({ title, content, image_url, url_link })
         });
         if (!res.ok) throw new Error((await res.json()).error || 'Gagal menambah FAQ');
 
-        // kosongkan form
+        // reset form
         document.getElementById('faqTitle').value = '';
         document.getElementById('faqContent').value = '';
         document.getElementById('faqImageUrl').value = '';
+        document.getElementById('faqUrlLink').value  = '';
         await doSearch();
       } catch (e) { alert(e.message); }
     });
+
 
 
     document.getElementById('gloAddBtn')?.addEventListener('click', async () => {
       const title = (document.getElementById('gloTitle').value || '').trim();
       const content = (document.getElementById('gloContent').value || '').trim();
+      const image_url = (document.getElementById('gloImageUrl').value || '').trim();
+      const url_link  = (document.getElementById('gloUrlLink').value || '').trim();
       if (!title || !content) return alert('Isi istilah & definisi');
       try {
-        const res = await fetch('/glossary', { method:'POST', headers: headersJSON(), body: JSON.stringify({ title, content }) });
+        const res = await fetch('/glossary', {
+          method:'POST',
+          headers: headersJSON(),
+          body: JSON.stringify({ title, content, image_url, url_link })
+        });
         if (!res.ok) throw new Error((await res.json()).error || 'Gagal menambah glosarium');
         document.getElementById('gloTitle').value = '';
         document.getElementById('gloContent').value = '';
+        document.getElementById('gloImageUrl').value = '';
+        document.getElementById('gloUrlLink').value = '';
         await doSearch();
       } catch (e) { alert(e.message); }
     });
+
 
     // ===== Admin: Edit/Hapus di panel detail (INLINE) =====
     detailEditBtn.addEventListener('click', () => {
@@ -580,20 +643,24 @@
       editTitle.value = activeItem.title || '';
       editContent.value = activeItem.content || '';
       editImageUrl.value = activeItem.image_url || '';
+      document.getElementById('editUrlLink').value = activeItem.url_link || ''; // ← isi url link
       detailView.classList.add('hidden');
       detailEditForm.classList.remove('hidden');
     });
+
     detailCancelBtn.addEventListener('click', () => {
       detailEditForm.classList.add('hidden');
       detailView.classList.remove('hidden');
     });
+
     detailEditForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!activeItem) return;
 
       const newTitle = editTitle.value.trim();
       const newContent = editContent.value.trim();
-      const newImage = (editImageUrl.value || '').trim();   // ✅ ambil gambar
+      const newImage = (editImageUrl.value || '').trim();
+      const newUrl   = (document.getElementById('editUrlLink').value || '').trim();
 
       if (!newTitle || !newContent) return alert('Judul & Konten wajib diisi');
 
@@ -602,7 +669,7 @@
         const res = await fetch(url, {
           method:'PUT',
           headers: headersJSON(),
-          body: JSON.stringify({ title: newTitle, content: newContent, image_url: newImage }) // ✅ kirim ke server
+          body: JSON.stringify({ title: newTitle, content: newContent, image_url: newImage, url_link: newUrl })
         });
         if (!res.ok) throw new Error((await res.json()).error || 'Gagal menyimpan perubahan');
 
@@ -611,6 +678,7 @@
         detailView.classList.remove('hidden');
       } catch (e) { alert(e.message); }
     });
+
     detailDeleteBtn.addEventListener('click', async () => {
       if (!activeItem) return;
       if (!confirm('Yakin hapus entri ini?')) return;
