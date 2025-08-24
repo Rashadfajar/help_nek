@@ -86,8 +86,9 @@
                 alt="Gambar FAQ">
 
             <div id="detailLinksWrap" class="mt-6 space-y-2 hidden">
-              <div class="text-sm font-semibold text-gray-700">Tautan terkait</div>
-              <ul id="detailLinks" class="list-inside list-disc text-sm text-emerald-700"></ul>
+              <!-- <div class="text-sm font-semibold text-gray-700">Tautan terkait</div> -->
+              <button id="detailLinks" class="text-xs rounded-full border px-3 py-1 hover:bg-gray-100"></button>
+              <!-- <ul id="detailLinks" class="list-inside list-disc text-sm text-emerald-700"></ul> -->
             </div>
             <!-- <div class="mt-4 flex items-center gap-2">
               <button id="copyLinkBtn" class="text-xs rounded-full border px-3 py-1 hover:bg-gray-50">Salin tautan</button>
@@ -461,7 +462,7 @@
           title: r.title ?? r.question ?? '',
           content: r.content ?? r.answer ?? '',
           image_url: r.image_url || null,
-          url_link:  r.url_link  || null,
+          link_url:  r.link_url  || null,
           category: 'FAQ',
           type: 'faq'
         }));
@@ -471,7 +472,7 @@
           title: r.title ?? r.term ?? '',
           content: r.content ?? r.definition ?? '',
           image_url: r.image_url || null,
-          url_link:  r.url_link  || null,
+          link_url:  r.link_url  || null,
           category: 'Glosarium',
           type: 'glossary'
         }));
@@ -595,12 +596,12 @@
         detailImage.classList.add('hidden');
       }
 
-      // Tautan terkait (url_link)
-      if (item.url_link) {
+      // Tautan terkait (link_url)
+      if (item.link_url) {
         detailLinksWrap.classList.remove('hidden');
         detailLinks.innerHTML = `
           <li>
-            <a href="${item.url_link}" target="_blank" class="text-blue-600 hover:underline">Buka tautan terkait</a>
+            <a href="${item.link_url}" target="_blank" >Buka tautan terkait</a>
           </li>`;
       } else {
         detailLinksWrap.classList.add('hidden');
@@ -731,14 +732,14 @@
       const title = (document.getElementById('faqTitle').value || '').trim();
       const content = (document.getElementById('faqContent').value || '').trim();
       const image_url = (document.getElementById('faqImageUrl').value || '').trim();
-      const url_link  = (document.getElementById('faqUrlLink').value || '').trim();
+      const link_url  = (document.getElementById('faqUrlLink').value || '').trim();
       if (!title || !content) return alert('Isi pertanyaan & jawaban');
 
       try {
         const res = await fetch('/faq', {
           method:'POST',
           headers: headersJSON(),
-          body: JSON.stringify({ title, content, image_url, url_link })
+          body: JSON.stringify({ title, content, image_url, link_url })
         });
         if (!res.ok) throw new Error((await res.json()).error || 'Gagal menambah FAQ');
 
@@ -757,13 +758,13 @@
       const title = (document.getElementById('gloTitle').value || '').trim();
       const content = (document.getElementById('gloContent').value || '').trim();
       const image_url = (document.getElementById('gloImageUrl').value || '').trim();
-      const url_link  = (document.getElementById('gloUrlLink').value || '').trim();
+      const link_url  = (document.getElementById('gloUrlLink').value || '').trim();
       if (!title || !content) return alert('Isi istilah & definisi');
       try {
         const res = await fetch('/glossary', {
           method:'POST',
           headers: headersJSON(),
-          body: JSON.stringify({ title, content, image_url, url_link })
+          body: JSON.stringify({ title, content, image_url, link_url })
         });
         if (!res.ok) throw new Error((await res.json()).error || 'Gagal menambah glosarium');
         document.getElementById('gloTitle').value = '';
@@ -781,7 +782,7 @@
       editTitle.value = activeItem.title || '';
       editContent.value = activeItem.content || '';
       editImageUrl.value = activeItem.image_url || '';
-      document.getElementById('editUrlLink').value = activeItem.url_link || ''; // ← isi url link
+      document.getElementById('editUrlLink').value = activeItem.link_url || ''; // ← isi url link
       detailView.classList.add('hidden');
       detailEditForm.classList.remove('hidden');
     });
@@ -807,7 +808,7 @@
         const res = await fetch(url, {
           method:'PUT',
           headers: headersJSON(),
-          body: JSON.stringify({ title: newTitle, content: newContent, image_url: newImage, url_link: newUrl })
+          body: JSON.stringify({ title: newTitle, content: newContent, image_url: newImage, link_url: newUrl })
         });
         if (!res.ok) throw new Error((await res.json()).error || 'Gagal menyimpan perubahan');
 
