@@ -9,8 +9,8 @@
 <body class="bg-gray-50 text-gray-800 font-sans min-h-screen">
   <div class="max-w-6xl mx-auto px-4 md:px-6 py-8 md:py-10">
     <!-- Header -->
-    <div class="mb-10 flex flex-col items-center md:flex-row md:justify-center md:space-x-4">
-      <img src="assets/logo_jakarta.png" alt="Logo DKI Jakarta" class="h-16 md:h-20 mb-2 md:mb-0">
+    <div id="logoTitle" class="mb-10 flex flex-col items-center md:flex-row md:justify-center md:space-x-4">
+      <img  src="assets/logo_jakarta.png" alt="Logo DKI Jakarta" class="h-16 md:h-20 mb-2 md:mb-0">
       <div class="text-center md:text-left">
         <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-green-700">Pusat Bantuan</h1>
         <h2 class="text-2xl font-semibold tracking-tight text-green-700">Penyelenggaraan NEK Provinsi DKI Jakarta</h2>
@@ -100,6 +100,10 @@
           <form id="detailEditForm" class="hidden mt-2 space-y-3">
             <input id="editTitle" class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500" />
             <textarea id="editContent" rows="6" class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"></textarea>
+              <p class="mb-3 text-xs text-gray-500">
+                Tambah gambar langsung di konten dengan format:  
+                <code>&lt;img src="URL_GAMBAR" alt="deskripsi"&gt;</code>
+              </p>
 
             <input id="editUrlLink" type="url"
               class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
@@ -443,6 +447,33 @@
       return s;
     }
 
+    document.getElementById('logoTitle').addEventListener('click', () => {
+      searchInput.value = '';
+      clearBtn.classList.add('hidden'); // Sembunyikan tombol clear
+
+      // Kosongkan hasil pencarian dan detail
+      resultsWrap.classList.add('hidden')
+      detailWrap.classList.add('hidden'); // Sembunyikan detail
+      detailTitle.textContent = '';
+      detailBody.innerHTML = '';
+
+      // Reset halaman ke halaman pertama
+      currentPage = 1;
+
+      // Kosongkan hasil filter
+      FILTERED = [];
+
+      // Pastikan hasil pencarian terlihat
+      // resultsWrap.classList.remove('hidden');
+      // resultsMeta.textContent = '';  // Reset pesan hasil pencarian
+      // resultsList.innerHTML = '';  // Hapus konten hasil pencarian
+      // renderResultsUI();  // Render ulang hasil pencarian jika ada
+
+      // Reset URL query params ke kondisi awal
+      const params = stateToParams({ q: '', page: 1 });
+      replaceRoute(params);
+      
+    });
 
     // ===== Fetch Data =====
     async function fetchData() {
@@ -547,16 +578,23 @@
       makeBtn('›', {disabled: currentPage===totalPages, pageNum: currentPage+1});
     }
 
+    // Function untuk menampilkan hasil pencarian dan memeriksa apakah ada hasil
     function renderResultsUI() {
       const q = (searchInput.value || '').trim();
       const { page, totalPages, slice } = paginate(FILTERED, currentPage, PAGE_SIZE);
       currentPage = page; // clamp
+
+      resultsWrap.classList.remove('hidden')
+
 
       resultsList.innerHTML = '';
       if (FILTERED.length === 0) {
         resultsMeta.textContent = '0 hasil';
         resultsList.innerHTML = '<div class="py-6 px-3 text-gray-500">Tidak ada hasil. Coba kata kunci lain.</div>';
         renderPaginationCompact(1);
+        
+        // Jika tidak ada hasil, sembunyikan detail
+        detailWrap.classList.add('hidden');
         return;
       }
 
@@ -583,13 +621,33 @@
     }
 
     function renderDetail(item) {
-      if (!item) return;
+      if (!item) {
+        activeItem = null;
+        // Jika tidak ada item, sembunyikan detail dan bersihkan kontennya
+        detailWrap.classList.add('hidden');
+        detailView.classList.add('hidden');
+        detailTitle.textContent = '';
+        detailBody.innerHTML = ''; // Kosongkan konten
+
+        // Pastikan gambar juga disembunyikan jika tidak ada item
+        detailImage.classList.add('hidden');
+        detailImage.src = '';
+
+        // Hapus tautan terkait jika tidak ada item
+        detailLinksWrap.classList.add('hidden');
+        detailLinks.innerHTML = '';
+
+        return;
+      }
+
+      // Jika ada item, tampilkan detail
+      detailWrap.classList.remove('hidden');
       activeItem = item;
       detailCat.textContent = item.category || '';
       detailTitle.textContent = item.title || '';
-      detailBody.textContent = item.content || '';
+      detailBody.innerHTML = item.content || ''; // Menggunakan innerHTML agar HTML tags (seperti <img>) dimasukkan
 
-      // Gambar untuk FAQ & Glosarium
+      // Untuk gambar lainnya
       const imgUrl = normalizeImageUrl(item.image_url);
       if (imgUrl) {
         detailImage.src = imgUrl;
@@ -601,12 +659,12 @@
         detailImage.classList.add('hidden');
       }
 
-      // Tautan terkait (link_url)
-      if (item.link_url) {
+      // Tampilkan tautan terkait jika ada
+      if (item.url_link) {
         detailLinksWrap.classList.remove('hidden');
         detailLinks.innerHTML = `
           <li>
-            <a href="${item.link_url}" target="_blank" >Buka tautan terkait</a>
+            <a href="${item.url_link}" target="_blank" class="text-blue-600 hover:underline">Buka tautan terkait</a>
           </li>`;
       } else {
         detailLinksWrap.classList.add('hidden');
@@ -617,6 +675,22 @@
       detailEditForm.classList.add('hidden');
       detailView.classList.remove('hidden');
     }
+
+    // Event listener untuk elemen daftar hasil pencarian (FAQ atau Glosarium)
+    document.getElementById('resultsList').addEventListener('click', function (e) {
+      const btn = e.target.closest('button[data-id]'); // Ambil elemen button di dalam list
+      if (!btn) return;
+
+      const id = btn.getAttribute('data-id');
+      const type = btn.getAttribute('data-type');
+
+      // Cari item berdasarkan ID dan tipe dari daftar yang sudah difilter
+      const item = FILTERED.find(x => String(x.id) === String(id) && x.type === type)
+                  || ITEMS.find(x => String(x.id) === String(id) && x.type === type);
+
+      // Tampilkan detail item yang diklik
+      renderDetail(item);
+    });
 
 
     function showResultsUI() {
@@ -636,22 +710,52 @@
       if (activeItem) renderDetail(activeItem);
     }
 
+    // Function untuk mencari dan memastikan status ketika search kosong
     async function doSearch(e) {
       if (e) e.preventDefault();
-      if (!ITEMS.length) await fetchData();
 
-      clearBtn.classList.toggle('hidden', !(searchInput.value||'').length);
+      resultsWrap.classList.remove('hidden');
+
+      // Jika input pencarian kosong, sembunyikan detail dan jangan lakukan pencarian
+      if (searchInput.value.trim() === '') {
+        detailWrap.classList.add('hidden');  // Sembunyikan detail
+        return;  // Menghentikan fungsi jika tidak ada input pencarian
+      }
+
+      if (!ITEMS.length) await fetchData();  // Ambil data jika belum ada
+
+      clearBtn.classList.toggle('hidden', !(searchInput.value || '').length);
       applyFilter();
-      currentPage = 1; // reset ke halaman 1 setiap pencarian baru
+      currentPage = 1; // Reset ke halaman 1 setiap pencarian baru
 
       if (!searched) { searched = true; showResultsUI(); }
 
       renderResultsUI();
       renderDetail(FILTERED[0] || null);
-      // sync URL
+
+      // Sync URL
       const params = stateToParams({ q: searchInput.value.trim(), page: currentPage, id: activeItem?.id, type: activeItem?.type });
       replaceRoute(params);
+
+      // Jika hasil pencarian kosong, sembunyikan detail
+      if (FILTERED.length === 0) {
+        detailWrap.classList.add('hidden');
+      }
     }
+
+
+    function handleSearchResult(results) {
+      if (results.length === 0) {
+        renderDetail(null); // Kosongkan tampilan detail
+        // Mungkin juga tampilkan pesan "Tidak ditemukan"
+        return;
+      }
+
+      // Jika ada hasil, tampilkan yang pertama misalnya
+      renderDetail(results[0]);
+    }
+
+
 
     function applyAsideLayout() {
       const aside = document.getElementById('rightAside');
@@ -710,7 +814,7 @@
       const id = btn.getAttribute('data-id');
       const type = btn.getAttribute('data-type');
       const item = FILTERED.find(x => String(x.id) === String(id) && x.type === type)
-                || ITEMS.find(x => String(x.id) === String(id) && x.type === type);
+                    || ITEMS.find(x => String(x.id) === String(id) && x.type === type);
       renderDetail(item);
       const params = stateToParams({ q: searchInput.value.trim(), page: currentPage, id: item.id, type: item.type });
       pushRoute(params);
