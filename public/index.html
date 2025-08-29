@@ -5,68 +5,250 @@
   <title>Pusat Bantuan Penyelenggaraan NEK Provinsi DKI Jakarta</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root{ --footer-h: 56px; }       /* tinggi footer fix (boleh diubah) */
+    footer{ height: var(--footer-h); }
+    html, body { height:100%; overflow:hidden; margin: 0; }                 /* kunci: tak ada scroll halaman */
+    #appShell { height:100vh; display:flex; flex-direction:column; padding-top: 3rem; min-height: 0; padding-bottom: var(--footer-h);}
+    #mainGrid { flex:1 1 auto; min-height:0; overflow:hidden; }  /* grid isi = sisa layar */
+
+    #leftCol, #middleCol{
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      padding-top:.5rem;
+    }
+
+    /* Default state aside: hormati class `hidden` */
+    #rightAside{ 
+      min-height:0;
+      padding-top:.5rem;
+      overflow:hidden;
+    }
+    /* Saat disembunyikan benar-benar hilang dari layout grid */
+    #rightAside.hidden{ 
+      display:none !important; 
+    }
+
+    /* Saat ditampilkan baru jadi flex column */
+    #rightAside:not(.hidden){
+      display:flex;
+      flex-direction:column;
+    }
+
+    #resultsWrap { min-height:0; }        /* supaya child bisa flex-1 */
+    #resultsList { flex:1 1 auto; overflow:auto; overscroll-behavior:contain; }
+
+    #detailWrap { flex:1 1 auto; min-height:0; overflow:auto; overscroll-behavior:contain; }
+    #adminBar, #liveAssistantBox { max-height:100%; overflow:auto; overscroll-behavior:contain; }
+
+    /* Background */
+    .bg-custom {
+      background-image: url('assets/Artboard.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+    /* ==== SCROLL LINE ==== */
+    .scrollline{
+      position:absolute; right:8px; width:8px; background:#1E40AF;
+      border-radius:9999px; cursor:pointer; z-index:10; opacity:.8; /* was .95 */
+    }
+
+    /* THUMB: lebih lebar dari track (left/right negatif), ring biru + shadow luar */
+    .scrollline__thumb{
+      position:absolute;
+      left:-2px;                /* ← bikin thumb 4px lebih lebar dari track */
+      right:-2px;
+      height:30px;              /* min-height tetap */
+      background:#F6E049;       /* kuning */
+      border-radius:9999px;
+      z-index:1;                /* di atas permukaan track */
+
+      /* ring + outline + drop shadow agar menonjol */
+      box-shadow:
+        inset 0 0 0 2px #1E40AF,       /* ring biru bagian dalam */
+        0 0 0 1px #0B2E8A,             /* outline tipis di luar */
+        0 4px 10px rgba(0,0,0,.18);    /* bayangan luar */
+
+      transition:
+        top .06s linear,
+        height .06s linear,
+        transform .12s ease,
+        box-shadow .12s ease;
+      cursor: grab;
+      will-change: top, height, transform;
+    }
+
+    .scrollline__thumb:hover{
+      transform: scaleX(1.06);         /* sedikit melebar saat hover */
+      box-shadow:
+        inset 0 0 0 2px #1E40AF,
+        0 0 0 1px #0B2E8A,
+        0 6px 14px rgba(0,0,0,.22);
+    }
+
+    .scrollline__thumb.dragging{
+      cursor: grabbing;
+      transform: scaleX(1.08);
+      box-shadow:
+        inset 0 0 0 2px #1E40AF,
+        0 0 0 1px #0B2E8A,
+        0 8px 18px rgba(0,0,0,.28);
+    }
+
+    /* sembunyikan scrollbar OS (biar yang terlihat hanya garis biru) */
+    .hide-native-scroll { scrollbar-width: none; }
+    .hide-native-scroll::-webkit-scrollbar { width:0; height:0; }
+
+    /* HERO */
+    .hero {
+      min-height: 58vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding-top: 8rem;
+      transition: min-height .35s ease, margin .35s ease, padding .35s ease, transform .35s ease;
+    }
+    .hero.hero--collapsed{
+      min-height: auto;          /* biar mengecil natural */
+      padding: .75rem 0 0;       /* kecilkan padding, TANPA margin negatif */
+    }
+
+    .card-tall{
+       min-height: 0; /* ≥ ~420px, ideal 50vh, maks 720px */
+    }
+
+    /* Logo block */
+    #logoTitle { display:flex; justify-content:center; align-items:center; margin-bottom:2rem; }
+    #logoTitle img { height:5rem; }
+
+    /* Clear button di input */
+    button#clearBtn { margin-left:-2rem; }
+
+    /* Search form: animasi lebar */
+    .searchForm { width: 500px; transition: width .4s ease; }
+    .searchForm.expanded { width: 800px; }
+
+    /* Baris search + toggle selalu 1 baris */
+    #searchRow { flex-wrap: nowrap; }
+    #searchOuter { transition: margin .3s ease; }
+
+    /* Saat panel kecil (topActions) tampil → geser kiri */
+    .tools-open #searchOuter{
+      margin-left: 0 !important;
+      margin-right: auto !important;
+    }
+    .tools-open #searchRow{ 
+      justify-content: flex-start;
+      padding-left: 4rem; 
+    }
+
+    #toggleAsideBtn .bar{
+      display:block;
+      height:0.5rem;    
+      border-radius:9999px;    
+      background:#2563eb;  
+      transition:width .2s ease, margin .2s ease;
+    }
+    #toggleAsideBtn .bar + .bar{ margin-top:0.25rem; }
+    #toggleAsideBtn .bar-mid{ width:0.875rem; } 
+    #toggleAsideBtn[aria-expanded="true"] .bar-mid{ width:1.5rem; }
+  </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans min-h-screen">
-  <div class="max-w-6xl mx-auto px-4 md:px-6 py-8 md:py-10">
-    <!-- Header -->
-    <div id="logoTitle" class="mb-10 ml-10 flex flex-col items-center md:flex-row md:justify-start md:space-x-4 px-3">
-      <img  src="assets/logo_jakarta.png" alt="Logo DKI Jakarta" class="h-16 md:h-20 mb-2 md:mb-0">
-      <div class="text-center md:text-left">
-        <h1 class="text-3xl md:text-4xl font-bold tracking-tight" style="color: rgb(216,179,101);">Connect ke NEK</h1>
-        <!-- <h2 class="text-2xl md:text-4xl font-bold tracking-tight" style="color: rgb(216,179,101);">Pusat Bantuan</h2> -->
-        <h2 class="text-2xl font-semibold tracking-tight" style="color: rgb(216,179,101);"> Pusat Bantuan Penyelenggaraan NEK Provinsi DKI Jakarta</h2>
+<body class="bg-custom text-gray-800 font-sans h-screen overflow-hidden">
+  <div id="appShell" class="max-w-6xl mx-auto h-full flex flex-col px-4 md:px-6 pt-4 pb-2">
+    <!-- HERO WRAP -->
+    <section id="heroWrap" class="hero">
+      <div class="max-w-6xl mx-auto px-4 md:px-6 py-4 md:py-4">
+        <!-- Header -->
+        <div id="logoTitle" class="mb-6">
+          <div class="flex items-center space-x-4">
+            <img src="assets/logo_jakarta.png" alt="Logo DKI Jakarta" class="h-16 md:h-20">
+            <div>
+              <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight uppercase text-blue-700">
+                Connect ke NEK DKI Jakarta
+              </h1>
+              <h2 class="mt-1 text-xl md:text-2xl italic font-semibold text-red-500">
+                Pusat Bantuan Penyelenggaraan NEK DKI Jakarta
+              </h2>
+            </div>
+          </div>
+        </div>
+
+        <!-- Search -->
+        <div id="searchOuter" class="relative max-w-4xl mx-auto">
+          <div id="searchRow" class="flex gap-1 items-stretch justify-center flex-nowrap">
+            <!-- Form Search -->
+            <form id="searchForm" class="searchForm flex rounded-full border-2 border-blue-500 bg-white pl-3 pr-0.5 shadow-sm">
+              <input
+                type="text"
+                id="searchInput"
+                placeholder="Cari bantuan… (mis. PTBAE-PU, SRN-PPI, ETS)"
+                class=" flex-grow h-12 px-3 outline-none rounded-l-full"
+                onfocus="expandSearchForm()"
+                onblur="contractSearchForm()"
+              />
+              <button id="clearBtn" type="button" title="Bersihkan"
+                class="hidden rounded-xl px-2 py-1 text-sm text-gray-500 hover:bg-gray-100">✕
+              </button>
+              <button type="submit"
+                class="flex items-center justify-center h-11 w-11 rounded-full bg-lime-400 text-blue-600 hover:bg-lime-500 transition ml-2 mt-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+                  viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z" />
+                </svg>
+              </button>
+            </form>
+
+            <!-- Tombol toggle aside -->
+            <button id="toggleAsideBtn" onclick="toggleTopActions()" title="Buka Bantuan"
+              class="flex items-center justify-center h-12 w-12 rounded-lg "
+              aria-expanded="false" aria-controls="topActions">
+              <span class="sr-only">Buka Bantuan</span>
+
+              <!-- ikon manual -->
+              <span class="sr-only">Buka Bantuan</span>
+              <div class="pointer-events-none flex flex-col items-start justify-center">
+                <span class="bar" style="width:1.5rem"></span>
+                <span class="bar bar-mid"></span>
+                <span class="bar" style="width:1.5rem"></span>
+              </div>
+            </button>
+            <div id="topActions" class=" hidden flex gap-2">
+              <button id="btnAdminToggle" onclick="toggleAdminBar()"
+                class="rounded-2xl border bg-white px-4 shadow-sm text-sm font-semibold hover:text-green-700"
+                title="Mode Admin">+Tambah Informasi
+              </button>
+
+              <button id="btnAssistToggle" onclick="toggleLiveAssistant()"
+                class="rounded-2xl border bg-white px-4 shadow-sm text-sm font-semibold hover:text-green-700">
+                Live Assistance
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-
-    <!-- Deskripsi singkat
-    <p class="text-center text-gray-600 mb-4">
-      Pusat bantuan adalah tempat untuk mencari jawaban atas pertanyaan seputar NEK (Nilai Ekonomi Karbon).
-    </p> -->
-
-    <!-- Search -->
-    <div class="relative mb-4 max-w-5xl mx-auto">
-      <div class="flex gap-2 items-stretch">
-        <!-- Form pencarian -->
-        <form id="searchForm" class="flex flex-grow items-center gap-2 rounded-2xl border bg-white px-3 shadow-sm">
-          <input
-            type="text"
-            id="searchInput"
-            placeholder="Cari bantuan… (mis. PTBAE-PU, SRN-PPI, ETS)"
-            class="h-12 w-full outline-none"
-          />
-          <button id="clearBtn" type="button" title="Bersihkan" class="hidden rounded-xl px-2 py-1 text-sm text-gray-500 hover:bg-gray-100">✕</button>
-            <!-- <button type="submit" class="h-11 rounded-xl bg-emerald-600 px-4 text-sm text-white hover:bg-emerald-700">
-              Cari
-            </button> -->
-        </form>
-
-        <!-- Tombol toggle aside dengan ikon -->
-        <button onclick="toggleAside()" class="h-12 aspect-square rounded-xl bg-green-600 p-2 text-white hover:bg-yellow-500" title="Buka Bantuan">
-          <!-- Icon Hamburger -->
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-full w-full" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
-      </div>
-    </div>
-
-
+    </section>
 
     <!-- Grid Utama -->
-    <main  class="flex-grow grid grid-cols-1 md:grid-cols-12 gap-4">
-      <!-- Kiri: Hasil Pencarian + Pagination -->
-      <section id="leftCol" class="order-2 md:order-1 md:col-span-3">
-        <div id="resultsWrap" class="hidden rounded-2xl border bg-white p-2 shadow-sm">
+    <main id="mainGrid" class="flex-1 min-h-0 overflow-hidden grid grid-cols-1 md:grid-cols-12 auto-rows-fr gap-4 pt-2 pb-0 px-10">
+      <!-- Kiri -->
+     <section id="leftCol"   class="order-2 md:order-1 md:col-span-3 min-h-0 h-full overflow-hidden">
+        <div id="resultsWrap" class="hidden h-full flex flex-col rounded-3xl border-2 border-blue-500 bg-white p-2 shadow-sm card-tall">
           <div id="resultsMeta" class="px-3 py-2 text-sm text-gray-500"></div>
-          <ul id="resultsList" class="divide-y" tabindex="0" aria-label="Daftar hasil"></ul>
-          <!-- Pagination (compact) -->
-          <div id="paginationWrap" class="hidden px-3 py-3 border-t flex items-center justify-center gap-1"></div>
+          <ul id="resultsList"
+            class="divide-y flex-1 overflow-auto overscroll-contain hide-native-scroll"
+            tabindex="0" aria-label="Daftar hasil"></ul>
+          <div id="paginationWrap" class="hidden px-3 py-3 border-t"></div>
         </div>
       </section>
 
-      <!-- Tengah: Detail -->
-      <section id="middleCol" class="order-3 md:order-2 md:col-span-5">
-        <div id="detailWrap" class="hidden rounded-2xl border bg-white p-6 shadow-sm">
+      <!-- Tengah -->
+      <section id="middleCol" class="order-3 md:order-2 md:col-span-5 min-h-0 h-full overflow-hidden">
+        <div id="detailWrap" class="hidden h-full overflow-auto overscroll-contain rounded-3xl border-2 border-blue-500 bg-white p-6 shadow-sm hide-native-scroll card-tall">
           <div class="mb-2 flex items-start justify-between gap-3">
             <div class="flex items-center gap-2">
               <span id="detailCat" class="rounded-full border px-2 py-0.5 text-xs text-gray-600"></span>
@@ -81,20 +263,14 @@
           <div id="detailView">
             <h1 id="detailTitle" class="text-2xl font-semibold"></h1>
             <p id="detailBody" class="mt-3 text-gray-700"></p>
-
-            <!-- 🔽 Tambahan: gambar FAQ -->
             <img id="detailImage" class="mt-4 hidden rounded-xl border border-gray-200 shadow-sm max-h-64 object-contain"
                 alt="Gambar FAQ">
-
-            <div id="detailLinksWrap" class="mt-6 space-y-2 hidden">
-              <!-- <div class="text-sm font-semibold text-gray-700">Tautan terkait</div> -->
-              <button id="detailLinks" class="text-xs rounded-full border px-3 py-1 hover:bg-gray-100"></button>
-              <!-- <ul id="detailLinks" class="list-inside list-disc text-sm text-emerald-700"></ul> -->
+            <div id="detailLinksWrap" class="mt-6 hidden">
+              <a id="detailLinkBtn" href="#" target="_blank"
+                class="inline-flex items-center text-xs rounded-full border px-3 py-1 hover:bg-gray-100">
+                Referensi
+              </a>
             </div>
-            <!-- <div class="mt-4 flex items-center gap-2">
-              <button id="copyLinkBtn" class="text-xs rounded-full border px-3 py-1 hover:bg-gray-50">Salin tautan</button>
-              <span id="copyLinkStatus" class="text-xs text-emerald-700 hidden">Tautan disalin</span>
-            </div> -->
           </div>
 
           <!-- Inline edit mode (admin) -->
@@ -102,20 +278,14 @@
             <input id="editTitle" class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500" />
             <textarea id="editContent" rows="6" class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"></textarea>
               <p class="mb-3 text-xs text-gray-500">
-                Tambah gambar langsung di konten dengan format:  
-                <code>&lt;img src="URL_GAMBAR" alt="deskripsi"&gt;</code>
+                Tambah gambar: <code>&lt;img src="URL_GAMBAR" alt="deskripsi"&gt;</code>
               </p>
-
             <input id="editUrlLink" type="url"
               class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
               placeholder="URL Link (opsional)">
-
-
-            <!-- 🔽 Tambahan: URL Gambar -->
             <input id="editImageUrl" type="url"
-                  class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  placeholder="Image URL (opsional)">
-
+              class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+              placeholder="Image URL (opsional)">
             <div class="flex items-center gap-2">
               <button id="detailSaveBtn" class="px-3 py-2 text-sm rounded-lg bg-violet-600 text-white hover:bg-violet-700" type="submit">Simpan</button>
               <button id="detailCancelBtn" class="px-3 py-2 text-sm rounded-lg bg-gray-200 hover:bg-gray-300" type="button">Batal</button>
@@ -124,55 +294,29 @@
         </div>
       </section>
 
-      <!-- Kanan: Tambahkan Informasi + Assistance -->
-      <aside id="rightAside" class="hidden order-1 md:order-3 md:col-span-4 space-y-4">
-        <!-- Toggle panel admin -->
-        <button
-          onclick="toggleAdminBar()"
-          title="Mode Admin"
-          class="rounded-2xl border bg-white px-5 py-2 shadow-sm ml-auto text-xl hover:text-green-700 md:ml-6">
-          +Tambah Informasi
-        </button>
+      <!-- Kanan: aside (hasil dari tombol topActions) -->
+      <aside id="rightAside" class="hidden order-1 md:order-3 md:col-span-4 min-h-0 h-full overflow-hidden space-y-2">
 
         <!-- Admin Bar (tersembunyi di awal) -->
-        <div id="adminBar" class="hidden mb-8 p-4 bg-violet-50 border border-violet-200 rounded-xl">
+        <div id="adminBar" class="hidden mb-8 p-4 bg-violet-50 border border-violet-200 rounded-xl max-h-full overflow-auto overscroll-contain hide-native-scroll">
           <div class="flex flex-wrap items-center gap-3">
-            <!-- ROW input + eye dibungkus satu wrapper agar mudah di-hide -->
-            <div id="adminKeyRow" class="relative flex-1 min-w-[220px] max-w-full">
-              <input
-                id="adminKeyInput"
-                type="password"
-                placeholder="Masukkan Admin Key"
+            <div id="adminKeyRow" class="relative flex-1 min-w-[200px] max-w-full">
+              <input id="adminKeyInput" type="password" placeholder="Masukkan Admin Key"
                 class="w-full p-2 pr-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
-                aria-label="Admin key"
-              />
-              <button
-                type="button"
-                id="togglePwdBtn"
-                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                title="Lihat/Sembunyikan password"
+                aria-label="Admin key"/>
+              <button type="button" id="togglePwdBtn"
+                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700" title="Lihat/Sembunyikan password"
                 aria-label="Lihat atau sembunyikan password">
-                <!-- ikon mata -->
-                <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                    viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
               </button>
             </div>
 
-            <button id="adminLoginBtn"
-                    class="px-3 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700">
-              Login
-            </button>
-
-            <button id="adminLogoutBtn"
-                    class="px-3 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 hidden">
-              Logout
-            </button>
-
+            
+            <button id="adminLoginBtn" class="px-3 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700"> Login </button>
+            <button id="adminLogoutBtn" class="px-3 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 hidden">Logout</button>
             <span id="adminStatus" class="text-sm text-gray-700"></span>
           </div>
 
@@ -181,94 +325,47 @@
             <!-- Tambah FAQ -->
             <div class="bg-white p-4 border rounded-xl shadow-sm w-full">
               <h3 class="font-semibold mb-3 text-violet-700">Tambah FAQ</h3>
-
-              <input id="faqTitle"
-                    class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    placeholder="Pertanyaan (title)" />
-
-              <textarea id="faqContent" rows="4"
-                        class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                        placeholder="Jawaban (content)"></textarea>
-
-              <input id="faqImageUrl" type="url"
-                    class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    placeholder="Image URL (opsional)" />
-
-              <input id="faqUrlLink" type="url"
-                    class="w-full p-2 border rounded mb-3 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    placeholder="URL Link (opsional)" />
-
-              <p class="mb-3 text-xs text-gray-500">
-                Drive direct: https://lh3.googleusercontent.com/d/FILE_ID=w1200
-              </p>
-
-              <button id="faqAddBtn"
-                      class="w-full px-3 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700">
-                Tambah FAQ
-              </button>
+              <input id="faqTitle" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-violet-500" placeholder="Pertanyaan (title)"/>
+              <textarea id="faqContent" rows="4" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-violet-500" placeholder="Jawaban (content)"></textarea>
+              <input id="faqImageUrl" type="url" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-violet-500" placeholder="Image URL (opsional)"/>
+              <input id="faqUrlLink" type="url" class="w-full p-2 border rounded mb-3 focus:outline-none focus:ring-2 focus:ring-violet-500" placeholder="URL Link (opsional)"/>
+              <p class="mb-3 text-xs text-gray-500">Drive direct: https://lh3.googleusercontent.com/d/FILE_ID=w1200</p>
+              <button id="faqAddBtn" class="w-full px-3 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700">Tambah FAQ</button>
             </div>
-
             <!-- Tambah Glosarium -->
             <div class="bg-white p-4 border rounded-xl shadow-sm w-full">
               <h3 class="font-semibold mb-3 text-green-700">Tambah Glosarium</h3>
-
-              <input id="gloTitle"
-                    class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                    placeholder="Istilah (title)" />
-
-              <textarea id="gloContent" rows="4"
-                        class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                        placeholder="Definisi (content)"></textarea>
-
-              <input id="gloImageUrl" type="url"
-                    class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                    placeholder="Image URL (opsional)" />
-
-              <input id="gloUrlLink" type="url"
-                    class="w-full p-2 border rounded mb-3 focus:outline-none focus:ring-2 focus:ring-green-500"
-                    placeholder="URL Link (opsional)" />
-
-              <p class="mb-3 text-xs text-gray-500">
-                Drive direct: https://lh3.googleusercontent.com/d/FILE_ID=w1200
-              </p>
-
-              <button id="gloAddBtn"
-                      class="w-full px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                Tambah Istilah
-              </button>
+              <input id="gloTitle" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Istilah (title)"/>
+              <textarea id="gloContent" rows="4" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Definisi (content)"></textarea>
+              <input id="gloImageUrl" type="url" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Image URL (opsional)"/>
+              <input id="gloUrlLink" type="url" class="w-full p-2 border rounded mb-3 focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="URL Link (opsional)"/>
+              <p class="mb-3 text-xs text-gray-500">Drive direct: https://lh3.googleusercontent.com/d/FILE_ID=w1200</p>
+              <button id="gloAddBtn" class="w-full px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Tambah Istilah</button>
             </div>
           </div>
         </div>
 
-
-        <!-- Tombol Live Assistance -->
-        <button onclick="toggleLiveAssistant()"
-                class="rounded-2xl border bg-white px-5 py-2 shadow-sm ml-auto text-xl hover:text-green-700 md:ml-6">
-          Live Assistance
-        </button>
-
         <!-- Kotak Live Assistance -->
-        <div id="liveAssistantBox" class="hidden mt-4 rounded-2xl border bg-violet-50 p-5 shadow-sm">
+       <div id="liveAssistantBox" class="hidden mt-4 rounded-2xl border bg-violet-50 p-5 shadow-sm max-h-full overflow-auto overscroll-contain hide-native-scroll">
           <h3 class="text-lg font-semibold">Live Assistance via Email</h3>
           <p class="mt-1 text-sm text-gray-600">Butuh bantuan? Kirim pertanyaan Anda melalui email.</p>
-          <input id="assistantSubject" placeholder="Subjek email"
-                class="mt-3 w-full rounded-xl border px-3 py-2 outline-none" />
-          <textarea id="assistantMsg" placeholder="Tulis pesan Anda…"
-                    rows="6" class="mt-3 w-full rounded-xl border px-3 py-2 outline-none"></textarea>
-          <button onclick="sendToEmail()"
-                  class="mt-3 w-full rounded-xl bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">
-            Kirim via Email
-          </button>
+          <input id="assistantSubject" placeholder="Subjek email" class="mt-3 w-full rounded-xl border px-3 py-2 outline-none" />
+          <textarea id="assistantMsg" placeholder="Tulis pesan Anda…" rows="6" class="mt-3 w-full rounded-xl border px-3 py-2 outline-none"></textarea>
+          <button onclick="sendToEmail()" class="mt-3 w-full rounded-xl bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">Kirim via Email</button>
         </div>
       </aside>
+      <!-- Tailwind safelist (jangan dihapus) -->
+      <div class="hidden">
+        <span class="md:col-span-8 md:col-span-4"></span>
+      </div>
     </main>
 
-    <!-- Footer Logo
-    <footer class="mt-10 border-t bg-white/50 py-4">
-      <div class="mx-auto flex max-w-6xl items-center justify-center gap-6">
-        <img src="assets/logo_jakarta.png" alt="Logo DKI Jakarta" class="h-12" />
-      </div>
-    </footer> -->
+    <!-- Footer -->
+    <footer class="fixed bottom-0 inset-x-0 pt-2 pb-5">
+      <p class="text-sm text-blue-700 text-center">Dibangun oleh 
+        <img src="assets/logo-dl-dki.png" alt="Logo DLH" class="inline h-8 w-8 mx-1" />
+        Dinas Lingkungan Hidup. didukung oleh Yayasan Generasi Hijau Indonesia</p>
+    </footer>
   </div>
 
   <script>
@@ -302,24 +399,20 @@
 
     function renderAdminState() {
       const detailActions = document.getElementById('detailActions');
-
       if (isAdmin()) {
-        // sembunyikan input + eye + tombol login
         adminKeyRow?.classList.add('hidden');
         adminLoginBtn?.classList.add('hidden');
         adminLogoutBtn?.classList.remove('hidden');
         adminStatus.textContent = 'Mode Admin aktif';
-
         adminForms?.classList.remove('hidden');
-        adminKeyInputEl.value = '';               // bersihkan input
-        adminKeyInputEl.type  = 'password';       // reset type
+        adminKeyInputEl.value = '';             
+        adminKeyInputEl.type  = 'password';       
         detailActions?.classList.remove('hidden');
       } else {
         adminKeyRow?.classList.remove('hidden');
         adminLoginBtn?.classList.remove('hidden');
         adminLogoutBtn?.classList.add('hidden');
         adminStatus.textContent = '';
-
         adminForms?.classList.add('hidden');
         detailActions?.classList.add('hidden');
       }
@@ -329,14 +422,13 @@
     adminLoginBtn?.addEventListener('click', async () => {
       const key = adminKeyInputEl.value.trim();
       if (!key) return alert('Masukkan admin key');
-
       try {
         const res = await fetch('/health', { headers: { 'x-admin-key': key } });
         if (res.status === 401) {
           alert('Admin key salah');
           return;
         }
-        setAdminKey(key); // hanya set jika server tidak 401
+        setAdminKey(key);
       } catch (e) {
         alert('Gagal konek ke server');
       }
@@ -348,7 +440,6 @@
       adminKeyInputEl.type = 'password';
       document.getElementById('eyeIcon')?.classList.remove('opacity-60');
     });
-
 
 
     window.addEventListener('keydown', (e) => {
@@ -381,7 +472,7 @@
     const detailTitle = document.getElementById('detailTitle');
     const detailBody = document.getElementById('detailBody');
     const detailLinksWrap = document.getElementById('detailLinksWrap');
-    const detailLinks = document.getElementById('detailLinks');
+    const detailLinkBtn = document.getElementById('detailLinkBtn');
     const detailEditBtn = document.getElementById('detailEditBtn');
     const detailDeleteBtn = document.getElementById('detailDeleteBtn');
     const detailEditForm = document.getElementById('detailEditForm');
@@ -394,31 +485,83 @@
     const editImageUrl = document.getElementById('editImageUrl');
     const copyLinkBtn = document.getElementById('copyLinkBtn');
     const copyLinkStatus = document.getElementById('copyLinkStatus');
-
-    const contribForm = document.getElementById('contribForm');
-    const contribTitle = document.getElementById('contribTitle');
-    const contribBody = document.getElementById('contribBody');
-    const contribSrc = document.getElementById('contribSrc');
-    const contribStatus = document.getElementById('contribStatus');
-
     const assistantMsg = document.getElementById('assistantMsg');
-    // const assistantSend = document.getElementById('assistantSend');
-    // const assistantStatus = document.getElementById('assistantStatus');
+    const hero = document.getElementById('heroWrap');
+
+    function setHeroCollapsed(on){ hero?.classList.toggle('hero--collapsed', !!on); }
+
+    // Hitung tinggi sisa layar & set ke box
+    function setPanelHeights() {
+      const hero   = document.getElementById('heroWrap');
+      const grid   = document.getElementById('mainGrid');
+      const root   = document.documentElement;
+
+      const vh       = window.innerHeight;
+      const heroH    = hero ? hero.offsetHeight : 0;
+
+      // ambil tinggi footer dari CSS var (lebih akurat untuk footer fixed)
+      const footerH  = parseFloat(getComputedStyle(root).getPropertyValue('--footer-h')) || 0;
+
+      const gp       = grid ? getComputedStyle(grid) : null;
+      const gridPadY = gp ? (parseFloat(gp.paddingTop) + parseFloat(gp.paddingBottom)) : 0;
+
+      // ruang yang bisa dipakai box
+      const avail = Math.max(320, vh - heroH - footerH - gridPadY);
+
+      const resultsWrap = document.getElementById('resultsWrap');
+      const detailWrap  = document.getElementById('detailWrap');
+      const adminBar    = document.getElementById('adminBar');
+      const liveBox     = document.getElementById('liveAssistantBox');
+
+      if (resultsWrap) resultsWrap.style.height = avail + 'px';
+      if (detailWrap)  detailWrap.style.height  = avail + 'px';
+      if (adminBar)    adminBar.style.maxHeight = avail + 'px';
+      if (liveBox)     liveBox.style.maxHeight  = avail + 'px';
+
+      if (typeof refreshScrolllines === 'function') refreshScrolllines();
+    }
+    window.addEventListener('resize', setPanelHeights);
+
+
+    function showLanding(){
+      setHeroCollapsed(false);          // hero tinggi (landing)
+      resultsWrap.classList.add('hidden');
+      detailWrap.classList.add('hidden');
+      setPanelHeights();
+    }
+
+    function showSearch(){
+      setHeroCollapsed(true);           // hero kecil, TANPA margin negatif
+      resultsWrap.classList.remove('hidden');
+      setPanelHeights();
+    }
+
+
 
     // ===== State =====
     let searched = false;
     let ITEMS = [];        // gabungan FAQ + Glosarium
     let FILTERED = [];     // hasil filter
-    let currentPage = 1;   // halaman aktif
-    const PAGE_SIZE = 5;   // LIMIT 5 / halaman
+    // let currentPage = 1;   // halaman aktif
+    // const PAGE_SIZE = 5;   // LIMIT 5 / halaman
     let activeItem = null; // item aktif di detail
     let activeIndex = -1;  // untuk keyboard nav
+
+    function expandSearchForm() {
+      document.getElementById("searchForm").classList.add("expanded");
+    }
+
+    function contractSearchForm() {
+      if (document.getElementById("searchInput").value === "") {
+        document.getElementById("searchForm").classList.remove("expanded");
+      }
+    }
 
     // ===== Router Helpers (deep-link) =====
     function stateToParams({q, page, id, type}) {
       const sp = new URLSearchParams(location.search);
       if (q != null) sp.set('q', q); else sp.delete('q');
-      if (page) sp.set('p', String(page)); else sp.delete('p');
+      // if (page) sp.set('p', String(page)); else sp.delete('p');
       if (id && type) { sp.set('id', id); sp.set('t', type); } else { sp.delete('id'); sp.delete('t'); }
       return sp.toString();
     }
@@ -426,7 +569,11 @@
     function replaceRoute(params){ history.replaceState(null, '', `${location.pathname}?${params}${location.hash}`); }
     function readRoute(){
       const sp = new URLSearchParams(location.search);
-      return { q: sp.get('q') || '', page: parseInt(sp.get('p')||'1',10) || 1, id: sp.get('id') || null, type: sp.get('t') || null };
+      return { q: sp.get('q') || '', 
+        // page: parseInt(sp.get('p')||'1',10) || 1, 
+        id: sp.get('id') || null, 
+        type: sp.get('t') || null 
+      };
     }
 
     // ===== Helpers =====
@@ -450,31 +597,65 @@
 
     document.getElementById('logoTitle').addEventListener('click', () => {
       searchInput.value = '';
-      clearBtn.classList.add('hidden'); // Sembunyikan tombol clear
-
-      // Kosongkan hasil pencarian dan detail
+      clearBtn.classList.add('hidden');
       resultsWrap.classList.add('hidden')
-      detailWrap.classList.add('hidden'); // Sembunyikan detail
+      detailWrap.classList.add('hidden'); 
       detailTitle.textContent = '';
       detailBody.innerHTML = '';
-
-      // Reset halaman ke halaman pertama
-      currentPage = 1;
-
-      // Kosongkan hasil filter
+      // currentPage = 1;
       FILTERED = [];
-
-      // Pastikan hasil pencarian terlihat
-      // resultsWrap.classList.remove('hidden');
-      // resultsMeta.textContent = '';  // Reset pesan hasil pencarian
-      // resultsList.innerHTML = '';  // Hapus konten hasil pencarian
-      // renderResultsUI();  // Render ulang hasil pencarian jika ada
-
-      // Reset URL query params ke kondisi awal
+      setHeroCollapsed(false); 
       const params = stateToParams({ q: '', page: 1 });
       replaceRoute(params);
       
     });
+
+    function showLanding() {
+      setHeroCollapsed(false);
+      resultsWrap.classList.add('hidden');
+      detailWrap.classList.add('hidden');
+    }
+
+    function showSearch() {
+      setHeroCollapsed(true);
+      resultsWrap.classList.remove('hidden');
+      // detailWrap akan dibuka saat ada item
+    }
+
+    // letakkan dekat helper lain
+    function moveSearchToTopForTools(){
+      // kecilkan hero walau belum ada query
+      setHeroCollapsed(true);
+      // pastikan aside muncul & grid menyesuaikan
+      ensureAsideVisible();
+      applyAsideLayout();
+      // hitung ulang tinggi panel agar tidak “pendek”
+      if (typeof setPanelHeights === 'function') setPanelHeights();
+    }
+
+    // Kalau semua panel (Admin/Live) tertutup:
+    function restoreSearchPositionIfNeeded() {
+      const adminBox = document.getElementById('adminBar');
+      const liveBox  = document.getElementById('liveAssistantBox');
+
+      const adminOpen = !!(adminBox && !adminBox.classList.contains('hidden'));
+      const liveOpen  = !!(liveBox  && !liveBox.classList.contains('hidden'));
+      const hasQuery  = !!(searchInput && searchInput.value.trim().length);
+
+      if (!adminOpen && !liveOpen) {
+        if (hasQuery) {
+          // user sudah ketik → tetap mode search (di atas)
+          if (typeof showSearch === 'function') showSearch();
+        } else {
+          // tidak ada query → kembali landing (di tengah)
+          if (typeof showLanding === 'function') showLanding();
+        }
+        if (typeof setPanelHeights === 'function') setPanelHeights();
+      }
+    }
+
+
+
 
     // ===== Fetch Data =====
     async function fetchData() {
@@ -508,7 +689,6 @@
         ITEMS = [...faqs, ...glossary].filter(x => x.id && x.title);
         ITEMS.sort((a,b) => a.title.localeCompare(b.title, 'id', { sensitivity: 'base' }));
 
-        // kalau kosong
         if (!ITEMS.length) {
           resultsWrap.classList.remove('hidden');
           resultsMeta.textContent = '0 hasil';
@@ -523,85 +703,96 @@
       }
     }
 
+    // function paginate(list, page, size) {
+    //   const totalPages = Math.max(1, Math.ceil(list.length / size));
+    //   const p = Math.min(Math.max(1, page), totalPages);
+    //   const start = (p - 1) * size;
+    //   const end = start + size;
+    //   return { page: p, totalPages, slice: list.slice(start, end) };
+    // }
 
-    function paginate(list, page, size) {
-      const totalPages = Math.max(1, Math.ceil(list.length / size));
-      const p = Math.min(Math.max(1, page), totalPages);
-      const start = (p - 1) * size;
-      const end = start + size;
-      return { page: p, totalPages, slice: list.slice(start, end) };
-    }
+    // function renderPaginationCompact(totalPages) {
+    //   paginationWrap.innerHTML = '';
+    //   if (totalPages <= 1) { paginationWrap.classList.add('hidden'); return; }
+    //   paginationWrap.classList.remove('hidden');
 
-    function renderPaginationCompact(totalPages) {
-      // ringkas: 1 … p-1 p p+1 … last
-      paginationWrap.innerHTML = '';
-      if (totalPages <= 1) { paginationWrap.classList.add('hidden'); return; }
-      paginationWrap.classList.remove('hidden');
+    //   const makeBtn = (label, {active=false, disabled=false, pageNum=null}={}) => {
+    //     const btn = document.createElement('button');
+    //     btn.textContent = label;
+    //     btn.className =
+    //       "px-3 py-1 rounded-lg border text-sm " +
+    //       (active ? "bg-emerald-600 text-white border-emerald-600" : "hover:bg-gray-50") +
+    //       (disabled ? " opacity-40 cursor-not-allowed" : "");
+    //     if (!disabled && pageNum != null) {
+    //       btn.addEventListener('click', () => { currentPage = pageNum; updateRouteAndUI(); });
+    //     }
+    //     paginationWrap.appendChild(btn);
+    //   };
+    //   const makeDots = () => {
+    //     const span = document.createElement('span');
+    //     span.textContent = '…';
+    //     span.className = "px-2 text-gray-500";
+    //     paginationWrap.appendChild(span);
+    //   };
 
-      const makeBtn = (label, {active=false, disabled=false, pageNum=null}={}) => {
-        const btn = document.createElement('button');
-        btn.textContent = label;
-        btn.className =
-          "px-3 py-1 rounded-lg border text-sm " +
-          (active ? "bg-emerald-600 text-white border-emerald-600" : "hover:bg-gray-50") +
-          (disabled ? " opacity-40 cursor-not-allowed" : "");
-        if (!disabled && pageNum != null) {
-          btn.addEventListener('click', () => { currentPage = pageNum; updateRouteAndUI(); });
-        }
-        paginationWrap.appendChild(btn);
-      };
-      const makeDots = () => {
-        const span = document.createElement('span');
-        span.textContent = '…';
-        span.className = "px-2 text-gray-500";
-        paginationWrap.appendChild(span);
-      };
-
-      // Prev
-      makeBtn('‹', {disabled: currentPage===1, pageNum: currentPage-1});
-
-      // numbers
-      if (totalPages <= 7) {
-        for (let i=1;i<=totalPages;i++){
-          makeBtn(String(i), {active: i===currentPage, pageNum: i});
-        }
-      } else {
-        makeBtn('1', {active: currentPage===1, pageNum: 1});
-        if (currentPage > 3) makeDots();
-        const start = Math.max(2, currentPage - 1);
-        const end = Math.min(totalPages - 1, currentPage + 1);
-        for (let p = start; p <= end; p++) makeBtn(String(p), {active: p===currentPage, pageNum: p});
-        if (currentPage < totalPages - 2) makeDots();
-        makeBtn(String(totalPages), {active: currentPage===totalPages, pageNum: totalPages});
-      }
-
-      // Next
-      makeBtn('›', {disabled: currentPage===totalPages, pageNum: currentPage+1});
-    }
+    //   makeBtn('‹', {disabled: currentPage===1, pageNum: currentPage-1});
+    //   if (totalPages <= 7) {
+    //     for (let i=1;i<=totalPages;i++){
+    //       makeBtn(String(i), {active: i===currentPage, pageNum: i});
+    //     }
+    //   } else {
+    //     makeBtn('1', {active: currentPage===1, pageNum: 1});
+    //     if (currentPage > 3) makeDots();
+    //     const start = Math.max(2, currentPage - 1);
+    //     const end = Math.min(totalPages - 1, currentPage + 1);
+    //     for (let p = start; p <= end; p++) makeBtn(String(p), {active: p===currentPage, pageNum: p});
+    //     if (currentPage < totalPages - 2) makeDots();
+    //     makeBtn(String(totalPages), {active: currentPage===totalPages, pageNum: totalPages});
+    //   }
+    //   makeBtn('›', {disabled: currentPage===totalPages, pageNum: currentPage+1});
+    // }
 
     // Function untuk menampilkan hasil pencarian dan memeriksa apakah ada hasil
     function renderResultsUI() {
       const q = (searchInput.value || '').trim();
-      const { page, totalPages, slice } = paginate(FILTERED, currentPage, PAGE_SIZE);
-      currentPage = page; // clamp
+      // const { page, totalPages, slice } = paginate(FILTERED, currentPage, PAGE_SIZE);
+      // currentPage = page; // clamp
 
       resultsWrap.classList.remove('hidden')
-
-
+      paginationWrap?.classList.add('hidden'); 
       resultsList.innerHTML = '';
-      if (FILTERED.length === 0) {
+
+      if (!FILTERED.length) {
         resultsMeta.textContent = '0 hasil';
-        resultsList.innerHTML = '<div class="py-6 px-3 text-gray-500">Tidak ada hasil. Coba kata kunci lain.</div>';
-        renderPaginationCompact(1);
-        
-        // Jika tidak ada hasil, sembunyikan detail
+        resultsList.innerHTML =
+          '<div class="py-6 px-3 text-gray-500">Tidak ada hasil. Coba kata kunci lain.</div>';
+        // renderPaginationCompact(1);                 // ← simpan sebagai komentar
         detailWrap.classList.add('hidden');
+        if (typeof refreshScrolllines === 'function') refreshScrolllines();
+        setPanelHeights();
         return;
       }
 
-      resultsMeta.textContent = `${FILTERED.length} hasil – halaman ${currentPage} dari ${totalPages}`;
+      // resultsMeta.textContent = `${FILTERED.length} hasil – halaman ${currentPage} dari ${totalPages}`;
+      resultsMeta.textContent = `${FILTERED.length} hasil`;
 
-      slice.forEach((item) => {
+      // slice.forEach((item) => {
+      //   const li = document.createElement('li');
+      //   li.innerHTML = `
+      //     <button class="w-full text-left p-3 hover:bg-gray-50 focus:bg-emerald-50 outline-none rounded-lg"
+      //             data-id="${item.id}" data-type="${item.type}" tabindex="-1">
+      //       <div class="flex items-center gap-2">
+      //         <span class="rounded-full border px-2 py-0.5 text-xs text-gray-600">${item.category}</span>
+      //         <h3 class="font-medium">${highlight(item.title, q)}</h3>
+      //       </div>
+      //       <p class="mt-1 line-clamp-2 text-sm text-gray-600">
+      //         ${highlight((item.content || '').slice(0, 160) + ((item.content||'').length>160 ? '…':''), q)}
+      //       </p>
+      //     </button>`;
+      //   resultsList.appendChild(li);
+      // });
+
+      FILTERED.forEach((item) => {
         const li = document.createElement('li');
         li.innerHTML = `
           <button class="w-full text-left p-3 hover:bg-gray-50 focus:bg-emerald-50 outline-none rounded-lg"
@@ -617,38 +808,34 @@
         resultsList.appendChild(li);
       });
 
-      renderPaginationCompact(totalPages);
+      // renderPaginationCompact(totalPages);
       activeIndex = -1;
+
+      detailWrap.classList.remove('hidden'); 
+
+      if (typeof refreshScrolllines==='function') refreshScrolllines(); setPanelHeights();
     }
 
     function renderDetail(item) {
       if (!item) {
         activeItem = null;
-        // Jika tidak ada item, sembunyikan detail dan bersihkan kontennya
         detailWrap.classList.add('hidden');
         detailView.classList.add('hidden');
         detailTitle.textContent = '';
-        detailBody.innerHTML = ''; // Kosongkan konten
-
-        // Pastikan gambar juga disembunyikan jika tidak ada item
+        detailBody.innerHTML = '';
         detailImage.classList.add('hidden');
         detailImage.src = '';
-
-        // Hapus tautan terkait jika tidak ada item
         detailLinksWrap.classList.add('hidden');
-        detailLinks.innerHTML = '';
-
+        detailLinkBtn.removeAttribute('href');  // <-- ganti dari detailLinks.innerHTML
         return;
       }
 
-      // Jika ada item, tampilkan detail
       detailWrap.classList.remove('hidden');
       activeItem = item;
       detailCat.textContent = item.category || '';
       detailTitle.textContent = item.title || '';
-      detailBody.innerHTML = item.content || ''; // Menggunakan innerHTML agar HTML tags (seperti <img>) dimasukkan
+      detailBody.innerHTML = item.content || '';
 
-      // Untuk gambar lainnya
       const imgUrl = normalizeImageUrl(item.image_url);
       if (imgUrl) {
         detailImage.src = imgUrl;
@@ -660,39 +847,19 @@
         detailImage.classList.add('hidden');
       }
 
-      // Tampilkan tautan terkait jika ada
-      if (item.url_link) {
+      if (item.link_url) {
         detailLinksWrap.classList.remove('hidden');
-        detailLinks.innerHTML = `
-          <li>
-            <a href="${item.url_link}" target="_blank" class="text-blue-600 hover:underline">Buka tautan terkait</a>
-          </li>`;
+        detailLinkBtn.href = item.link_url;
       } else {
         detailLinksWrap.classList.add('hidden');
-        detailLinks.innerHTML = '';
+        detailLinkBtn.removeAttribute('href');
       }
 
       renderAdminState();
       detailEditForm.classList.add('hidden');
       detailView.classList.remove('hidden');
+      if (typeof refreshScrolllines==='function') refreshScrolllines(); setPanelHeights();
     }
-
-    // Event listener untuk elemen daftar hasil pencarian (FAQ atau Glosarium)
-    document.getElementById('resultsList').addEventListener('click', function (e) {
-      const btn = e.target.closest('button[data-id]'); // Ambil elemen button di dalam list
-      if (!btn) return;
-
-      const id = btn.getAttribute('data-id');
-      const type = btn.getAttribute('data-type');
-
-      // Cari item berdasarkan ID dan tipe dari daftar yang sudah difilter
-      const item = FILTERED.find(x => String(x.id) === String(id) && x.type === type)
-                  || ITEMS.find(x => String(x.id) === String(id) && x.type === type);
-
-      // Tampilkan detail item yang diklik
-      renderDetail(item);
-    });
-
 
     function showResultsUI() {
       resultsWrap.classList.remove('hidden');
@@ -711,23 +878,25 @@
       if (activeItem) renderDetail(activeItem);
     }
 
-    // Function untuk mencari dan memastikan status ketika search kosong
     async function doSearch(e) {
       if (e) e.preventDefault();
-
-      resultsWrap.classList.remove('hidden');
-
-      // Jika input pencarian kosong, sembunyikan detail dan jangan lakukan pencarian
-      if (searchInput.value.trim() === '') {
-        detailWrap.classList.add('hidden');  // Sembunyikan detail
-        return;  // Menghentikan fungsi jika tidak ada input pencarian
+      
+      const q = searchInput.value.trim();
+      if (!q){
+        setHeroCollapsed(false);
+        resultsWrap.classList.add('hidden');
+        detailWrap.classList.add('hidden');
+        return;
       }
+
+      setHeroCollapsed(true);
+      resultsWrap.classList.remove('hidden');
 
       if (!ITEMS.length) await fetchData();  // Ambil data jika belum ada
 
       clearBtn.classList.toggle('hidden', !(searchInput.value || '').length);
       applyFilter();
-      currentPage = 1; // Reset ke halaman 1 setiap pencarian baru
+      // currentPage = 1; // Reset ke halaman 1 setiap pencarian baru
 
       if (!searched) { searched = true; showResultsUI(); }
 
@@ -744,70 +913,277 @@
       }
     }
 
-
     function handleSearchResult(results) {
       if (results.length === 0) {
         renderDetail(null); // Kosongkan tampilan detail
         // Mungkin juga tampilkan pesan "Tidak ditemukan"
         return;
       }
-
       // Jika ada hasil, tampilkan yang pertama misalnya
       renderDetail(results[0]);
     }
 
+    // Helper: tutup aside kalau kosong
+    function closeAsideIfEmpty() {
+      const aside    = document.getElementById('rightAside');
+      const adminBox = document.getElementById('adminBar');
+      const liveBox  = document.getElementById('liveAssistantBox');
+
+      const adminOpen = !!(adminBox && !adminBox.classList.contains('hidden'));
+      const liveOpen  = !!(liveBox  && !liveBox.classList.contains('hidden'));
+
+      // kalau dua-duanya tertutup → tutup aside & reset tanda tombol
+      if (!adminOpen && !liveOpen) {
+        if (aside && !aside.classList.contains('hidden')) {
+          aside.classList.add('hidden');
+        }
+        document.body.classList.remove('aside-open');
+
+        // reset indikator tombol (bold+warna kembali ke semula)
+        if (typeof setToolsIndicator === 'function') {
+          setToolsIndicator({ adminOpen: false, liveOpen: false });
+        }
+
+        // sinkron state panel kecil (aria-expanded), tidak menutupinya
+        if (typeof syncTopActionsState === 'function') {
+          syncTopActionsState();
+        }
+
+        // rapikan layout + tinggi + scrollline
+        if (typeof applyAsideLayout === 'function') applyAsideLayout();
+        if (typeof refreshScrolllines === 'function') refreshScrolllines();
+        if (typeof setPanelHeights === 'function') setPanelHeights();
+      }
+      
+      if (typeof restoreSearchPositionIfNeeded === 'function') {
+        restoreSearchPositionIfNeeded();
+      }
+    }
 
 
     function applyAsideLayout() {
-      const aside = document.getElementById('rightAside');
+      const aside  = document.getElementById('rightAside');
       const middle = document.getElementById('middleCol');
-      const left = document.getElementById('leftCol');
+      const left   = document.getElementById('leftCol');
 
-      // ketika aside disembunyikan → tengah melebar (4 → 8)
+      left.classList.remove('md:col-span-3','md:col-span-4');
+      middle.classList.remove('md:col-span-5','md:col-span-8');
+
       if (aside.classList.contains('hidden')) {
-        left.classList.remove('md:col-span-3')
         left.classList.add('md:col-span-4');
-        middle.classList.remove('md:col-span-5');
         middle.classList.add('md:col-span-8');
+        document.body.classList.remove('aside-open');
       } else {
-        // ketika aside tampil → tengah kembali 4
-        left.classList.remove('md:col-span-4')
         left.classList.add('md:col-span-3');
-        middle.classList.remove('md:col-span-8');
         middle.classList.add('md:col-span-5');
+        document.body.classList.add('aside-open');
+      }
+      setPanelHeights();
+    }
+
+    function ensureAsideVisible(){
+      const aside = document.getElementById('rightAside');
+      if (aside.classList.contains('hidden')) {
+        aside.classList.remove('hidden');
+        applyAsideLayout();
       }
     }
 
-    function toggleAside() {
-      const aside = document.getElementById("rightAside");
-      aside.classList.toggle("hidden");
-      applyAsideLayout(); 
+    function toggleAsideBtn() {
+      const aside = document.getElementById('rightAside');
+      const willShow = aside.classList.contains('hidden');
+      aside.classList.toggle('hidden');
+      if (willShow) document.body.classList.add('aside-open');
+      else document.body.classList.remove('aside-open');
+      applyAsideLayout();
     }
 
-    // ✅ NEW: show/hide panel Admin Bar
+    // ===== Hamburger → topActions (panel kecil)
+    function toggleTopActions(){
+      const panel = document.getElementById('topActions');   
+      const btn   = document.getElementById('toggleAsideBtn');
+      const willShow = panel.classList.contains('hidden');
+
+      // gunakan tools-open (BUKAN aside-open)
+      if (willShow) document.body.classList.add('tools-open');
+      else document.body.classList.remove('tools-open');
+
+      panel.classList.toggle('hidden');
+      btn.setAttribute('aria-expanded', String(willShow));
+
+      if (!willShow){
+        document.getElementById('adminBar')?.classList.add('hidden');
+        document.getElementById('liveAssistantBox')?.classList.add('hidden');
+      }
+      closeAsideIfEmpty();
+    }
+
+    // Tutup topActions saat klik di luar / ESC
+    document.addEventListener('click', (e)=>{
+      const box = document.getElementById('topActions');
+      const btn = document.getElementById('toggleAsideBtn');
+      if (!box || box.classList.contains('hidden')) return;
+      if (!box.contains(e.target) && !btn.contains(e.target)){
+        box.classList.add('hidden');
+        btn?.setAttribute('aria-expanded','false');
+        document.body.classList.remove('tools-open'); // ← ganti
+      }
+    });
+    document.addEventListener('keydown',(e)=>{
+      if (e.key === 'Escape'){
+        const box = document.getElementById('topActions');
+        const btn = document.getElementById('toggleAsideBtn');
+        if (!box?.classList.contains('hidden')){
+          box.classList.add('hidden');
+          btn?.setAttribute('aria-expanded','false');
+          document.body.classList.remove('tools-open'); // ← ganti
+        }
+      }
+    });
+
+    // ===== Helpers untuk TopActions & highlight tombol =====
+    function setToolsIndicator({ adminOpen, liveOpen }) {
+      const btnAdmin = document.getElementById('btnAdminToggle');
+      const btnAsst  = document.getElementById('btnAssistToggle');
+
+      const mark = (btn, active) => {
+        if (!btn) return;
+        // Bersihkan SEMUA warna yang mungkin pernah dipakai
+        btn.classList.remove(
+          'text-blue-700','text-indigo-700','text-green-700','text-emerald-700',
+          'font-bold','font-semibold'
+        );
+        // Set state baru
+        if (active) {
+          btn.classList.add('text-blue-700','font-bold'); // aktif = biru + bold
+          btn.setAttribute('aria-pressed','true');
+        } else {
+          btn.classList.add('font-semibold');             // nonaktif = balik semula
+          btn.setAttribute('aria-pressed','false');
+          // Optional: kalau mau paksa benar-benar netral, kosongkan inline color:
+          btn.style.color = '';
+        }
+      };
+
+      // Eksklusif: hanya satu aktif
+      const onlyAdmin = !!adminOpen && !liveOpen;
+      const onlyLive  = !!liveOpen  && !adminOpen;
+
+      mark(btnAdmin, onlyAdmin);
+      mark(btnAsst,  onlyLive);
+    }
+
+
+    // ===== Admin & Assistance
     function toggleAdminBar(force) {
-      const el = document.getElementById('adminBar');
-      if (!el) return;
-      if (typeof force === 'boolean') {
-        el.classList.toggle('hidden', !force);
+      const adminBox = document.getElementById('adminBar');
+      const liveBox  = document.getElementById('liveAssistantBox');
+
+      // tentukan apakah akan membuka admin
+      const willOpen = (typeof force === 'boolean')
+        ? force
+        : adminBox.classList.contains('hidden');
+
+      if (willOpen) {
+        // buka Admin, tutup Live — eksklusif
+        adminBox.classList.remove('hidden');
+        if (liveBox && !liveBox.classList.contains('hidden')) liveBox.classList.add('hidden');
+
+        // naikkan search + pastikan aside tampil
+        moveSearchToTopForTools();
+        ensureAsideVisible();
       } else {
-        el.classList.toggle('hidden');
+        // tutup Admin
+        adminBox.classList.add('hidden');
       }
+
+        // ⬇️ TARUH DI SINI — setelah visibilitas berubah
+      if (adminBox.classList.contains('hidden') && liveBox.classList.contains('hidden')) {
+        setToolsIndicator({ adminOpen: false, liveOpen: false });
+      } else {
+        setToolsIndicator({
+          adminOpen: !adminBox.classList.contains('hidden'),
+          liveOpen : !liveBox.classList.contains('hidden')
+        });
+      }
+
+      // update layout & indikator
+      closeAsideIfEmpty();
+      applyAsideLayout();
+      attachScrollline(adminBox, adminBox);
+      refreshScrolllines();
+      setPanelHeights();
+
+      restoreSearchPositionIfNeeded();
     }
 
+    function toggleLiveAssistant() {
+      const adminBox = document.getElementById('adminBar');
+      const liveBox  = document.getElementById('liveAssistantBox');
 
+      const willOpen = liveBox.classList.contains('hidden');
+
+      if (willOpen) {
+        // buka Live, tutup Admin — eksklusif
+        liveBox.classList.remove('hidden');
+        if (adminBox && !adminBox.classList.contains('hidden')) adminBox.classList.add('hidden');
+
+        moveSearchToTopForTools();
+        ensureAsideVisible();
+      } else {
+        // tutup Live
+        liveBox.classList.add('hidden');
+      }
+
+      // ⬇️ TARUH DI SINI — setelah visibilitas berubah
+      if (adminBox.classList.contains('hidden') && liveBox.classList.contains('hidden')) {
+        setToolsIndicator({ adminOpen: false, liveOpen: false });
+      } else {
+        setToolsIndicator({
+          adminOpen: !adminBox.classList.contains('hidden'),
+          liveOpen : !liveBox.classList.contains('hidden')
+        });
+      }
+      closeAsideIfEmpty();
+      applyAsideLayout();
+      attachScrollline(liveBox, liveBox);
+      refreshScrolllines();
+      setPanelHeights();
+
+      restoreSearchPositionIfNeeded();
+    }
 
     // ===== Events =====
     searchForm.addEventListener('submit', doSearch);
     searchInput.addEventListener('input', (e) => {
       clearBtn.classList.toggle('hidden', !e.target.value.length);
-      if (searched) { applyFilter(); currentPage = 1; renderResultsUI(); renderDetail(FILTERED[0] || null); }
+
+      if (!e.target.value.trim()){
+        setHeroCollapsed(false);       
+        resultsWrap.classList.add('hidden');
+        detailWrap.classList.add('hidden');
+        return;
+      }
+
+      if (searched){
+        applyFilter();
+        // currentPage = 1;
+        renderResultsUI(); renderDetail(FILTERED[0] || null);
+        setHeroCollapsed(true);             
+      }
     });
+
     clearBtn.addEventListener('click', () => {
       searchInput.value = '';
       clearBtn.classList.add('hidden');
-      if (searched) { applyFilter(); currentPage = 1; renderResultsUI(); renderDetail(FILTERED[0] || null); }
+      setHeroCollapsed(false);
+      resultsWrap.classList.add('hidden');
+      detailWrap.classList.add('hidden');
+      activeItem = null;
+      // currentPage = 1;
+      replaceRoute(stateToParams({ q: '', page: 1 }));
     });
+
 
     resultsList.addEventListener('click', (e) => {
       const btn = e.target.closest('button[data-id]');
@@ -821,7 +1197,6 @@
       pushRoute(params);
     });
 
-    // Keyboard navigation untuk list: Up/Down + Enter
     resultsList.addEventListener('keydown', (e) => {
       const buttons = Array.from(resultsList.querySelectorAll('button[data-id]'));
       if (!buttons.length) return;
@@ -862,8 +1237,6 @@
       } catch (e) { alert(e.message); }
     });
 
-
-
     document.getElementById('gloAddBtn')?.addEventListener('click', async () => {
       const title = (document.getElementById('gloTitle').value || '').trim();
       const content = (document.getElementById('gloContent').value || '').trim();
@@ -896,7 +1269,6 @@
       detailView.classList.add('hidden');
       detailEditForm.classList.remove('hidden');
     });
-
     detailCancelBtn.addEventListener('click', () => {
       detailEditForm.classList.add('hidden');
       detailView.classList.remove('hidden');
@@ -905,14 +1277,11 @@
     detailEditForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!activeItem) return;
-
       const newTitle = editTitle.value.trim();
       const newContent = editContent.value.trim();
       const newImage = (editImageUrl.value || '').trim();
       const newUrl   = (document.getElementById('editUrlLink').value || '').trim();
-
       if (!newTitle || !newContent) return alert('Judul & Konten wajib diisi');
-
       try {
         const url = `/${activeItem.type}/${activeItem.id}`;
         const res = await fetch(url, {
@@ -921,7 +1290,6 @@
           body: JSON.stringify({ title: newTitle, content: newContent, image_url: newImage, link_url: newUrl })
         });
         if (!res.ok) throw new Error((await res.json()).error || 'Gagal menyimpan perubahan');
-
         await doSearch();
         detailEditForm.classList.add('hidden');
         detailView.classList.remove('hidden');
@@ -944,11 +1312,6 @@
         }
       } catch (e) { alert(e.message); }
     });
-
-    function toggleLiveAssistant() {
-      const box = document.getElementById("liveAssistantBox");
-      box.classList.toggle("hidden");
-    }
 
     function sendToEmail() {
       const subject = document.getElementById("assistantSubject").value.trim();
@@ -977,39 +1340,236 @@
       } catch (e){ alert(url); }
     });
 
+    // === Scroll Line Utility with DRAG & CLICK (fixed) ===
+    const SCROLLLINE_GAP = 8;          // gap default atas/bawah
+    const SCROLLLINE_OFFSET_Y = 15;    // geser sedikit turun
+
+    function attachScrollline(scroller, hostForLine, opts = {}) {
+      if (!scroller) return;
+
+      // opsi per-instance (bisa diubah saat memanggil)
+      const defaults = {
+        gapTop: SCROLLLINE_GAP + SCROLLLINE_OFFSET_Y, // turun sedikit
+        gapBottom: SCROLLLINE_GAP,                    // atur lebih kecil utk "rentang bawah" lebih jauh
+        right: 8,
+        width: null                                   // set angka (mis. 20) kalau mau override CSS
+      };
+      const options = { ...defaults, ...(scroller._scrollline?.opts || {}), ...opts };
+
+      // buat elemen sekali saja
+      if (!scroller._scrollline) {
+        const host = hostForLine || scroller.parentElement || scroller;
+        if (!host) return;
+        if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+
+        const track = document.createElement('div');
+        track.className = 'scrollline';
+        const thumb = document.createElement('div');
+        thumb.className = 'scrollline__thumb';
+        track.appendChild(thumb);
+        host.appendChild(track);
+
+        scroller._scrollline = { host, track, thumb, opts: options };
+        scroller.dataset.scrolllineAttached = '1';
+
+        scroller.addEventListener('scroll', update, { passive: true });
+        new ResizeObserver(update).observe(scroller);
+        window.addEventListener('resize', update);
+
+        // DRAG setup
+        let dragging = false;
+        let startClientY = 0, startThumbTop = 0;
+
+        const onMove = (ev) => {
+          if (!dragging) return;
+          ev.preventDefault();
+          const clientY = ev.touches ? ev.touches[0].clientY : ev.clientY;
+          const m = metrics();
+          const delta = clientY - startClientY;
+          const newThumbTop = Math.max(0, Math.min(m.maxThumbTop, startThumbTop + delta));
+          const scrollRatio = m.maxThumbTop > 0 ? (newThumbTop / m.maxThumbTop) : 0;
+          scroller.scrollTop = Math.round(m.scrollable * scrollRatio);
+        };
+
+        const stopDrag = () => {
+          if (!dragging) return;
+          dragging = false;
+          thumb.classList.remove('dragging');
+          scroller.classList.remove('no-select');
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', stopDrag);
+          document.removeEventListener('touchmove', onMove, { passive:false });
+          document.removeEventListener('touchend', stopDrag);
+        };
+
+        const startDrag = (ev) => {
+          ev.preventDefault();
+          dragging = true;
+          thumb.classList.add('dragging');
+          scroller.classList.add('no-select');
+          startClientY = ev.touches ? ev.touches[0].clientY : ev.clientY;
+          startThumbTop = parseFloat(getComputedStyle(thumb).top) || 0;
+          document.addEventListener('mousemove', onMove);
+          document.addEventListener('mouseup', stopDrag);
+          document.addEventListener('touchmove', onMove, { passive:false });
+          document.addEventListener('touchend', stopDrag);
+        };
+
+        thumb.addEventListener('mousedown', startDrag);
+        thumb.addEventListener('touchstart', startDrag, { passive:false });
+
+        // CLICK track (lompat)
+        track.addEventListener('mousedown', (e) => {
+          if (e.target === thumb) return;
+          const rect = track.getBoundingClientRect();
+          const y = e.clientY - rect.top;
+          const m = metrics();
+          const ratio = Math.max(0, Math.min(1, y / m.trackH));
+          scroller.scrollTop = Math.round(m.scrollable * ratio);
+        });
+      } else {
+        // update opsi kalau sudah terpasang
+        scroller._scrollline.opts = options;
+      }
+
+      // ---- helpers konsisten ----
+      function metrics() {
+        const { host, opts } = scroller._scrollline;
+        const h  = scroller.clientHeight;
+        const sh = scroller.scrollHeight;
+        const st = scroller.scrollTop;
+        const hasScroll = sh > h + 1;
+
+        const trackH  = Math.max(24, h - (opts.gapTop + opts.gapBottom));
+        const baseTop = (host === scroller ? st : 0) + opts.gapTop;
+        const ratio   = h / sh;
+        const thumbH  = Math.max(30, Math.round(trackH * ratio));
+        const maxThumbTop = Math.max(0, trackH - thumbH);
+        const scrollable  = Math.max(0, sh - h);
+
+        return { h, sh, st, hasScroll, trackH, baseTop, ratio, thumbH, maxThumbTop, scrollable };
+      }
+
+      function update() {
+        const { track, thumb, opts } = scroller._scrollline;
+        const m = metrics();
+
+        track.style.display = m.hasScroll ? 'block' : 'none';
+        if (!m.hasScroll) return;
+
+        if (opts.width != null) track.style.width = opts.width + 'px';
+        track.style.right  = (opts.right ?? 8) + 'px';
+        track.style.top    = m.baseTop + 'px';
+        track.style.height = m.trackH + 'px';
+
+        const thumbTop = m.scrollable ? Math.round((m.st / m.scrollable) * m.maxThumbTop) : 0;
+        thumb.style.height = m.thumbH + 'px';
+        thumb.style.top    = Math.max(0, Math.min(m.maxThumbTop, thumbTop)) + 'px';
+      }
+
+      // render awal + expose updater
+      requestAnimationFrame(update);
+      scroller._updateScrollline = update;
+    }
+
+    function refreshScrolllines() {
+      ['resultsList','detailWrap','adminBar','liveAssistantBox']
+        .map(id => document.getElementById(id))
+        .forEach(el => el?._updateScrollline && el._updateScrollline());
+    }
+
+
     // ===== Router: back/forward & boot from URL =====
     window.addEventListener('popstate', async () => {
-      const { q, page, id, type } = readRoute();
+      const { q, /* page, */ id, type } = readRoute();
       if (!ITEMS.length) await fetchData();
+
       searchInput.value = q || '';
       clearBtn.classList.toggle('hidden', !q);
-      applyFilter();
-      currentPage = page || 1;
+
+      if (!q) {                 // kembali ke landing
+        showLanding();
+        renderDetail(null);
+        refreshScrolllines();   // <-- update garis
+        return;
+      }
+
+      // mode search
+      searched = true;
+      showSearch();
       showResultsUI();
+
+      applyFilter();
+      // currentPage = page || 1;
       renderResultsUI();
+
       if (id && type){
-        const item = FILTERED.find(x=>String(x.id)===String(id) && x.type===type) || ITEMS.find(x=>String(x.id)===String(id) && x.type===type);
+        const item = FILTERED.find(x=>String(x.id)===String(id) && x.type===type)
+                || ITEMS.find(x=>String(x.id)===String(id) && x.type===type);
         if (item) renderDetail(item);
       } else {
         renderDetail(FILTERED[0] || null);
       }
+      refreshScrolllines();     // <-- update garis setelah render
     });
 
     // Boot: baca URL params kalau ada
     (async function boot(){
-      const { q, page, id, type } = readRoute();
+      const { q,  /* page, */ id, type } = readRoute();
       if (!ITEMS.length) await fetchData();
-      if (q){ searchInput.value = q; clearBtn.classList.remove('hidden'); searched = true; showResultsUI(); applyFilter(); currentPage = page || 1; renderResultsUI(); }
+
+      if (!q) {
+        showLanding();
+        renderAdminState();
+
+        // kiri: turunkan rentang bawah → gapBottom kecil (0–4 px)
+        attachScrollline(document.getElementById('resultsList'), null, { gapTop: 50, gapBottom: -30 });
+
+        // tengah & kanan (biarkan default, atau atur sendiri)
+        attachScrollline(document.getElementById('detailWrap'), document.getElementById('middleCol'));
+        attachScrollline(document.getElementById('adminBar'), document.getElementById('rightAside'));
+        attachScrollline(document.getElementById('liveAssistantBox'), document.getElementById('rightAside'));
+
+        refreshScrolllines();
+        setPanelHeights();
+        return;
+      }
+
+      // ada q → langsung mode search
+      searchInput.value = q;
+      clearBtn.classList.remove('hidden');
+      searched = true;
+
+      showSearch();
+      showResultsUI();
+
+      applyFilter();
+      // currentPage = page || 1;
+      renderResultsUI();
+
       if (id && type){
         const item = ITEMS.find(x=>String(x.id)===String(id) && x.type===type);
         if (item){ renderDetail(item); }
-      } else if (q){
+      } else {
         renderDetail(FILTERED[0] || null);
       }
-      if (q || id){ replaceRoute(stateToParams({ q: searchInput.value.trim(), page: currentPage, id, type })); }
+
+      replaceRoute(stateToParams({ q: searchInput.value.trim(), page: currentPage, id, type }));
       renderAdminState();
+
+      // pasang garis setelah DOM/box siap
+      // kiri: turunkan rentang bawah → gapBottom kecil (0–4 px)
+      attachScrollline(document.getElementById('resultsList'), null, { gapTop: 50, gapBottom: -30 });
+
+      // tengah & kanan (biarkan default, atau atur sendiri)
+      attachScrollline(document.getElementById('detailWrap'), document.getElementById('middleCol'));
+      attachScrollline(document.getElementById('adminBar'), document.getElementById('rightAside'));
+      attachScrollline(document.getElementById('liveAssistantBox'), document.getElementById('rightAside'));
+      refreshScrolllines();
+      setPanelHeights();
     })();
-    applyAsideLayout();      
+
+    applyAsideLayout();
   </script>
 </body>
 </html>
