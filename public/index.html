@@ -6,173 +6,282 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    :root{ --footer-h: 56px; }       /* tinggi footer fix (boleh diubah) */
-    footer{ height: var(--footer-h); }
-    html, body { height:100%; overflow:hidden; margin: 0; }                 /* kunci: tak ada scroll halaman */
-    #appShell { height:100vh; display:flex; flex-direction:column; padding-top: 3rem; min-height: 0; padding-bottom: var(--footer-h);}
-    #mainGrid { flex:1 1 auto; min-height:0; overflow:hidden; }  /* grid isi = sisa layar */
+    /* ===========================
+      Root & Footer
+    ============================ */
+    :root { --footer-h: 56px; }          /* tinggi footer (desktop/tablet) */
+    footer { height: var(--footer-h); }
 
-    #leftCol, #middleCol{
-      min-height:0;
-      display:flex;
-      flex-direction:column;
-      padding-top:.5rem;
+    /* ===========================
+      Desktop/Tablet (default): 1 layar, scroll di dalam box
+    ============================ */
+    html, body { height: 100%; overflow: hidden; margin: 0; }
+    #appShell {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      padding: 3rem 0 var(--footer-h);
+    }
+    #mainGrid { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+
+    /* Kolom */
+    #leftCol, #middleCol {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      padding-top: .5rem;
     }
 
-    /* Default state aside: hormati class `hidden` */
-    #rightAside{ 
-      min-height:0;
-      padding-top:.5rem;
-      overflow:hidden;
-    }
-    /* Saat disembunyikan benar-benar hilang dari layout grid */
-    #rightAside.hidden{ 
-      display:none !important; 
-    }
+    /* Right Aside: hormati .hidden agar benar2 tidak makan tinggi */
+    #rightAside { min-height: 0; padding-top: .5rem; overflow: hidden; }
+    #rightAside.hidden { display: none !important; }
+    #rightAside:not(.hidden) { display: flex; flex-direction: column; }
 
-    /* Saat ditampilkan baru jadi flex column */
-    #rightAside:not(.hidden){
-      display:flex;
-      flex-direction:column;
-    }
-
-    #resultsWrap { min-height:0; }        /* supaya child bisa flex-1 */
-    #resultsList { flex:1 1 auto; overflow:auto; overscroll-behavior:contain; }
-
-    #detailWrap { flex:1 1 auto; min-height:0; overflow:auto; overscroll-behavior:contain; }
-    #adminBar, #liveAssistantBox { max-height:100%; overflow:auto; overscroll-behavior:contain; }
+    /* Kartu & isi scroll (desktop) */
+    #resultsWrap { min-height: 0; }
+    #resultsList { flex: 1 1 auto; overflow: auto; overscroll-behavior: contain; }
+    #detailWrap  { flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+    #adminBar, #liveAssistantBox { max-height: 100%; overflow: auto; overscroll-behavior: contain; }
 
     /* Background */
     .bg-custom {
       background-image: url('assets/Artboard.png');
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-    }
-    /* ==== SCROLL LINE ==== */
-    .scrollline{
-      position:absolute; right:8px; width:8px; background:#1E40AF;
-      border-radius:9999px; cursor:pointer; z-index:10; opacity:.8; /* was .95 */
+      background-size: cover; background-position: center; background-repeat: no-repeat;
     }
 
-    /* THUMB: lebih lebar dari track (left/right negatif), ring biru + shadow luar */
+    /* ===========================
+      Scrollline custom (desktop)
+    ============================ */
+    .scrollline {
+      position: absolute; right: 8px; width: 8px;
+      background: #1E40AF; border-radius: 9999px;
+      cursor: pointer; z-index: 10; opacity: .8;
+    }
     .scrollline__thumb{
-      position:absolute;
-      left:-2px;                /* ← bikin thumb 4px lebih lebar dari track */
-      right:-2px;
-      height:30px;              /* min-height tetap */
-      background:#F6E049;       /* kuning */
-      border-radius:9999px;
-      z-index:1;                /* di atas permukaan track */
-
-      /* ring + outline + drop shadow agar menonjol */
+      position: absolute; left: -2px; right: -2px; height: 30px;
+      background: #F6E049; border-radius: 9999px; z-index: 1;
       box-shadow:
-        inset 0 0 0 2px #1E40AF,       /* ring biru bagian dalam */
-        0 0 0 1px #0B2E8A,             /* outline tipis di luar */
-        0 4px 10px rgba(0,0,0,.18);    /* bayangan luar */
-
-      transition:
-        top .06s linear,
-        height .06s linear,
-        transform .12s ease,
-        box-shadow .12s ease;
+        inset 0 0 0 2px #1E40AF,
+        0 0 0 1px #0B2E8A,
+        0 4px 10px rgba(0,0,0,.18);
+      transition: top .06s linear, height .06s linear, transform .12s ease, box-shadow .12s ease;
       cursor: grab;
-      will-change: top, height, transform;
     }
-
     .scrollline__thumb:hover{
-      transform: scaleX(1.06);         /* sedikit melebar saat hover */
+      transform: scaleX(1.06);
       box-shadow:
         inset 0 0 0 2px #1E40AF,
         0 0 0 1px #0B2E8A,
         0 6px 14px rgba(0,0,0,.22);
     }
-
     .scrollline__thumb.dragging{
-      cursor: grabbing;
-      transform: scaleX(1.08);
+      cursor: grabbing; transform: scaleX(1.08);
       box-shadow:
         inset 0 0 0 2px #1E40AF,
         0 0 0 1px #0B2E8A,
         0 8px 18px rgba(0,0,0,.28);
     }
-
-    /* sembunyikan scrollbar OS (biar yang terlihat hanya garis biru) */
     .hide-native-scroll { scrollbar-width: none; }
-    .hide-native-scroll::-webkit-scrollbar { width:0; height:0; }
+    .hide-native-scroll::-webkit-scrollbar { width: 0; height: 0; }
 
-    /* HERO */
-    .hero {
+    /* ===========================
+      HERO
+    ============================ */
+    .hero{
       min-height: 58vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
       padding-top: 8rem;
       transition: min-height .35s ease, margin .35s ease, padding .35s ease, transform .35s ease;
     }
-    .hero.hero--collapsed{
-      min-height: auto;          /* biar mengecil natural */
-      padding: .75rem 0 0;       /* kecilkan padding, TANPA margin negatif */
-    }
+    .hero.hero--collapsed{ min-height: auto; padding: .75rem 0 0; }
 
-    .card-tall{
-       min-height: 0; /* ≥ ~420px, ideal 50vh, maks 720px */
-    }
+    /* ===========================
+      Misc
+    ============================ */
+    .card-tall { min-height: 0; }
+    #logoTitle { display: flex; justify-content: center; align-items: center; margin-bottom: 2rem; }
+    #logoTitle img { height: 5rem; }
+    button#clearBtn { margin-left: -2rem; }
+    /* #detailCat { display: none !important; }  sembunyikan chip kategori di detail */
 
-    /* Logo block */
-    #logoTitle { display:flex; justify-content:center; align-items:center; margin-bottom:2rem; }
-    #logoTitle img { height:5rem; }
-
-    /* Clear button di input */
-    button#clearBtn { margin-left:-2rem; }
-
-    /* Search form: animasi lebar */
+    /* ===========================
+      Search bar (desktop)
+    ============================ */
     .searchForm { width: 500px; transition: width .4s ease; }
     .searchForm.expanded { width: 800px; }
 
-    /* Baris search + toggle selalu 1 baris */
+    /* Baris search (desktop) */
     #searchRow { flex-wrap: nowrap; }
     #searchOuter { transition: margin .3s ease; }
 
-    /* Saat panel kecil (topActions) tampil → geser kiri */
-    .tools-open #searchOuter{
-      margin-left: 0 !important;
-      margin-right: auto !important;
+    /* Saat tools (topActions) dibuka di desktop: geser sedikit ke kiri */
+    .tools-open #searchOuter { margin-left: 0 !important; margin-right: auto !important; }
+    .tools-open #searchRow { justify-content: flex-start; padding-left: 4rem; }
+
+    /* Ikon hamburger */
+    #toggleAsideBtn .bar{
+      display: block; height: .5rem; border-radius: 9999px;
+      background: #2563eb; transition: width .2s ease, margin .2s ease;
     }
-    .tools-open #searchRow{ 
-      justify-content: flex-start;
-      padding-left: 4rem; 
+    #toggleAsideBtn .bar + .bar { margin-top: .25rem; }
+    #toggleAsideBtn .bar-mid { width: .875rem; }
+    #toggleAsideBtn[aria-expanded="true"] .bar-mid { width: 1.5rem; }
+
+    /* ===========================
+      Elevation (shadow) untuk kartu utama
+    ============================ */
+    #resultsWrap,        /* kiri */
+    #detailWrap,         /* tengah */
+    #adminBar,           /* kanan: Admin */
+    #liveAssistantBox {  /* kanan: Live Assistance */
+      box-shadow:
+        0 14px 28px rgba(0,0,0,.12),
+        0 10px 10px rgba(0,0,0,.06);
+    }
+    /* Jangan clip bayangan di level kolom */
+    #leftCol, #middleCol, #rightAside { overflow: visible !important; }
+
+    /* ===========================
+      Tablet+ : kembalikan animasi lebar form
+    ============================ */
+    @media (min-width: 768px){
+      .searchForm { width: 500px; }
+      .searchForm.expanded { width: 800px; }
     }
 
-    #toggleAsideBtn .bar{
-      display:block;
-      height:0.5rem;    
-      border-radius:9999px;    
-      background:#2563eb;  
-      transition:width .2s ease, margin .2s ease;
+    /* =================================================================
+      MOBILE (≤640px): halaman bebas scroll, tools jadi baris bawah search
+      ================================================================= */
+    @media (max-width: 640px){
+      :root { --footer-h: 64px; }
+
+      /* Halaman boleh scroll (bukan fixed 1 layar) */
+      html, body { height: auto; min-height: 100%; overflow: auto; }
+      #appShell { height: auto; min-height: 100%; padding-top: 1rem; padding-bottom: 0; }
+      #mainGrid {
+        gap: .5rem; padding-left: .75rem; padding-right: .75rem;
+        min-height: 0; overflow: visible;
+      }
+      #leftCol, #middleCol, #rightAside { min-height: auto; overflow: visible; }
+
+      /* Box mengikuti konten (hindari nested scroll di HP) */
+      #resultsWrap, #detailWrap, #adminBar, #liveAssistantBox {
+        height: auto !important; max-height: none !important; overflow: visible;
+      }
+      #resultsList { max-height: none; overflow: visible; }
+
+      /* Matikan scrollline custom di HP */
+      .scrollline { display: none !important; }
+
+      /* HERO lebih pendek */
+      .hero { min-height: 34vh; padding-top: 2rem; }
+      .hero.hero--collapsed { min-height: auto; padding-top: .5rem; }
+
+      /* Search full width, tombol menu di kanan, tools di baris bawah */
+      #searchRow {
+        display: grid;
+        grid-template-columns: 1fr auto;  /* kiri: form; kanan: tombol */
+        grid-auto-rows: auto;
+        align-items: center;
+        gap: .5rem;
+      }
+      #searchForm {
+        grid-column: 1 / 2;
+        width: 100% !important; flex: 1 1 auto; min-width: 0;
+      }
+      .searchForm.expanded { width: 100% !important; } /* cegah melebar di HP */
+      #toggleAsideBtn {
+        grid-column: 2 / 3; width: 44px; height: 44px; flex: 0 0 44px; margin: 0;
+      }
+
+      /* TopActions (tombol tools) sebagai baris di bawah search */
+      #topActions{
+        position: static !important;
+        grid-column: 1 / -1;
+        order: 2;
+        margin-top: .25rem;
+        display: none; gap: .5rem; justify-content: flex-start;
+        background: transparent; border: 0; padding: 0; box-shadow: none;
+      }
+      #topActions:not(.hidden) { display: flex; }
+      #topActions .rounded-2xl {
+        padding: .5rem .75rem; font-size: .9rem; white-space: nowrap;
+      }
+
+      /* Host panel (Admin/Live) tepat di bawah TopActions */
+      #toolsMobileHost{
+        display: block;
+        grid-column: 1 / -1;
+        order: 3;
+        margin-top: .25rem;
+      }
+      #toolsMobileHost > #adminBar,
+      #toolsMobileHost > #liveAssistantBox{
+        border-radius: .75rem;
+        border: 1px solid #e5e7eb;
+        padding: .75rem;
+        background: #fff;
+        box-shadow:
+          0 14px 28px rgba(0,0,0,.12),
+          0 10px 10px rgba(0,0,0,.06);
+      }
+
+      /* Kartu lebih kompak */
+      #resultsWrap, #detailWrap { border-width: 1.5px; padding: .75rem; }
+
+      /* Matikan efek “geser” tools-open di HP */
+      .tools-open #searchOuter { margin: 0 !important; }
+      .tools-open #searchRow { justify-content: center; padding-left: 0 !important; }
+
+      /* Footer tidak fixed di HP */
+      footer { position: static !important; }
+      footer p { font-size: 12px; line-height: 1.35; text-wrap: balance; }
+
+      /* Saat mode search aktif, rapatkan jarak hero → grid */
+      body.search-mode #mainGrid { margin-top: .25rem !important; padding-top: 0 !important; }
+      body.search-mode .hero.hero--collapsed { padding-bottom: 0 !important; }
+
+      /* Default kecil saat bukan search-mode (antisipasi mt/py dari markup) */
+      #mainGrid { margin-top: 0 !important; padding-top: .25rem; }
+
+      /* Pagination area tampil di HP */
+      #paginationWrap { display: flex !important; }
     }
-    #toggleAsideBtn .bar + .bar{ margin-top:0.25rem; }
-    #toggleAsideBtn .bar-mid{ width:0.875rem; } 
-    #toggleAsideBtn[aria-expanded="true"] .bar-mid{ width:1.5rem; }
+    /* bantu wrapping judul agar rapi di layar sempit */
+    @supports (text-wrap: balance){
+      #logoTitle h1, #logoTitle p { text-wrap: balance; }
+    }
+
   </style>
 </head>
-<body class="bg-custom text-gray-800 font-sans h-screen overflow-hidden">
+<body class="bg-custom text-gray-800 font-sans md:h-screen md:overflow-hidden">
   <div id="appShell" class="max-w-6xl mx-auto h-full flex flex-col px-4 md:px-6 pt-4 pb-2">
     <!-- HERO WRAP -->
     <section id="heroWrap" class="hero">
       <div class="max-w-6xl mx-auto px-4 md:px-6 py-4 md:py-4">
         <!-- Header -->
         <div id="logoTitle" class="mb-6">
-          <div class="flex items-center space-x-4">
-            <img src="assets/logo_jakarta.png" alt="Logo DKI Jakarta" class="h-16 md:h-20">
-            <div>
-              <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight uppercase text-blue-700">
-                Connect ke NEK DKI Jakarta
-              </h1>
-              <h2 class="mt-1 text-xl md:text-2xl italic font-semibold text-red-500">
-                Pusat Bantuan Penyelenggaraan NEK DKI Jakarta
-              </h2>
+          <div class="mx-auto w-full max-w-3xl">
+            <div class="grid items-center gap-3 md:gap-5 grid-cols-1 md:grid-cols-[auto,1fr]">
+              <!-- Logo -->
+              <img src="assets/logo_jakarta.png" alt="Logo DKI Jakarta"
+                  class="h-14 md:h-20 mx-auto md:mx-0 rounded-xl" />
+
+              <!-- Judul + subjudul -->
+              <div class="text-center md:text-left">
+                <h1 class="leading-tight font-extrabold uppercase tracking-tight text-blue-700
+                          text-[clamp(1.8rem,3vw,2.5rem)]">
+                  CONNECT KE NEK DKI JAKARTA
+                </h1>
+                <p class="mt-1 italic font-semibold text-red-500
+                          text-[clamp(1rem,2.5vw,1.6rem)]">
+                  Pusat Bantuan Penyelenggaraan NEK DKI Jakarta
+                </p>
+
+                <!-- aksen halus di desktop -->
+                <!-- <div class="hidden md:block h-1 w-24 bg-blue-600/80 rounded-full mt-2"></div> -->
+              </div>
             </div>
           </div>
         </div>
@@ -186,7 +295,7 @@
                 type="text"
                 id="searchInput"
                 placeholder="Cari bantuan… (mis. PTBAE-PU, SRN-PPI, ETS)"
-                class=" flex-grow h-12 px-3 outline-none rounded-l-full"
+                class=" flex-grow h-12 px-3 outline-none rounded-l-full placeholder-blue-300"
                 onfocus="expandSearchForm()"
                 onblur="contractSearchForm()"
               />
@@ -234,7 +343,7 @@
     </section>
 
     <!-- Grid Utama -->
-    <main id="mainGrid" class="flex-1 min-h-0 overflow-hidden grid grid-cols-1 md:grid-cols-12 auto-rows-fr gap-4 pt-2 pb-0 px-10">
+    <main id="mainGrid" class="flex-1 min-h-0 overflow-hidden grid grid-cols-1 md:grid-cols-12 auto-rows-fr gap-4 pt-2 pb-0 px-4 md:px-10">
       <!-- Kiri -->
      <section id="leftCol"   class="order-2 md:order-1 md:col-span-3 min-h-0 h-full overflow-hidden">
         <div id="resultsWrap" class="hidden h-full flex flex-col rounded-3xl border-2 border-blue-500 bg-white p-2 shadow-sm card-tall">
@@ -261,13 +370,13 @@
 
           <!-- View mode -->
           <div id="detailView">
-            <h1 id="detailTitle" class="text-2xl font-semibold"></h1>
+            <h1 id="detailTitle" class="text-2xl font-semibold text-blue-700"></h1>
             <p id="detailBody" class="mt-3 text-gray-700"></p>
             <img id="detailImage" class="mt-4 hidden rounded-xl border border-gray-200 shadow-sm max-h-64 object-contain"
                 alt="Gambar FAQ">
             <div id="detailLinksWrap" class="mt-6 hidden">
               <a id="detailLinkBtn" href="#" target="_blank"
-                class="inline-flex items-center text-xs rounded-full border px-3 py-1 hover:bg-gray-100">
+                class="inline-flex items-center text-md rounded-full border-2 border-blue-500  px-4 py-1 bg-lime-400 text-blue-800 font-bold hover:bg-gray-100">
                 Referensi
               </a>
             </div>
@@ -363,7 +472,7 @@
     <!-- Footer -->
     <footer class="fixed bottom-0 inset-x-0 pt-2 pb-5">
       <p class="text-sm text-blue-700 text-center">Dibangun oleh 
-        <img src="assets/logo-dl-dki.png" alt="Logo DLH" class="inline h-8 w-8 mx-1" />
+        <img src="assets/logo-dlh.png" alt="Logo DLH" class="inline h-8 w-8 mx-1" />
         Dinas Lingkungan Hidup. didukung oleh Yayasan Generasi Hijau Indonesia</p>
     </footer>
   </div>
@@ -487,11 +596,20 @@
     const copyLinkStatus = document.getElementById('copyLinkStatus');
     const assistantMsg = document.getElementById('assistantMsg');
     const hero = document.getElementById('heroWrap');
+    const isMobile = () => window.matchMedia('(max-width: 640px)').matches;
 
     function setHeroCollapsed(on){ hero?.classList.toggle('hero--collapsed', !!on); }
 
     // Hitung tinggi sisa layar & set ke box
     function setPanelHeights() {
+
+      if (window.innerWidth <= 640) {
+        ['resultsWrap','detailWrap','adminBar','liveAssistantBox'].forEach(id=>{
+          const el = document.getElementById(id);
+          if (el){ el.style.height = ''; el.style.maxHeight = ''; el.style.overflow = ''; }
+        });
+        return;
+      }
       const hero   = document.getElementById('heroWrap');
       const grid   = document.getElementById('mainGrid');
       const root   = document.documentElement;
@@ -522,17 +640,50 @@
     }
     window.addEventListener('resize', setPanelHeights);
 
+    function isToolsOpen(){
+      const adminBox = document.getElementById('adminBar');
+      const liveBox  = document.getElementById('liveAssistantBox');
+      return (!!adminBox && !adminBox.classList.contains('hidden')) ||
+            (!!liveBox  && !liveBox.classList.contains('hidden'));
+    }
+
+    function updateSearchPosition(){
+      const q = (document.getElementById('searchInput')?.value || '').trim();
+      const stickTop = q.length > 0 || isToolsOpen();  // ← kunci: tools open → tetap di atas
+      if (stickTop){
+        setHeroCollapsed(true);
+        document.body.classList.add('search-mode');
+      }else{
+        setHeroCollapsed(false);
+        document.body.classList.remove('search-mode');
+      }
+    }
+
+
 
     function showLanding(){
-      setHeroCollapsed(false);          // hero tinggi (landing)
+      // Jika tools (Admin/Live) sedang terbuka → tetap di atas
+      if (isToolsOpen()){
+        setHeroCollapsed(true);
+        document.body.classList.add('search-mode');
+      } else {
+        // Normal: landing (search di tengah)
+        setHeroCollapsed(false);
+        document.body.classList.remove('search-mode');
+      }
+
+      // hasil disembunyikan saat landing
       resultsWrap.classList.add('hidden');
       detailWrap.classList.add('hidden');
+
       setPanelHeights();
     }
 
     function showSearch(){
-      setHeroCollapsed(true);           // hero kecil, TANPA margin negatif
+      setHeroCollapsed(true);                 // hero kecil, TANPA margin negatif
+      document.body.classList.add('search-mode');
       resultsWrap.classList.remove('hidden');
+      if (isMobile()) document.getElementById('rightAside')?.classList.add('hidden');
       setPanelHeights();
     }
 
@@ -548,12 +699,15 @@
     let activeIndex = -1;  // untuk keyboard nav
 
     function expandSearchForm() {
-      document.getElementById("searchForm").classList.add("expanded");
+      if (window.innerWidth >= 768) { // hanya desktop/tablet
+        document.getElementById("searchForm").classList.add("expanded");
+      }
     }
-
     function contractSearchForm() {
-      if (document.getElementById("searchInput").value === "") {
-        document.getElementById("searchForm").classList.remove("expanded");
+      if (window.innerWidth >= 768) {
+        if (!document.getElementById("searchInput").value) {
+          document.getElementById("searchForm").classList.remove("expanded");
+        }
       }
     }
 
@@ -633,6 +787,7 @@
       if (typeof setPanelHeights === 'function') setPanelHeights();
     }
 
+
     // Kalau semua panel (Admin/Live) tertutup:
     function restoreSearchPositionIfNeeded() {
       const adminBox = document.getElementById('adminBar');
@@ -654,6 +809,36 @@
       }
     }
 
+    function setToolsIndicator({ adminOpen, liveOpen }) {
+      const btnAdmin = document.getElementById('btnAdminToggle');
+      const btnAsst  = document.getElementById('btnAssistToggle');
+
+      const mark = (btn, active) => {
+        if (!btn) return;
+        // Bersihkan SEMUA warna yang mungkin pernah dipakai
+        btn.classList.remove(
+          'text-blue-700','text-indigo-700','text-green-700','text-emerald-700',
+          'font-bold','font-semibold'
+        );
+        // Set state baru
+        if (active) {
+          btn.classList.add('text-blue-700','font-bold'); // aktif = biru + bold
+          btn.setAttribute('aria-pressed','true');
+        } else {
+          btn.classList.add('font-semibold');             // nonaktif = balik semula
+          btn.setAttribute('aria-pressed','false');
+          // Optional: kalau mau paksa benar-benar netral, kosongkan inline color:
+          btn.style.color = '';
+        }
+      };
+
+      // Eksklusif: hanya satu aktif
+      const onlyAdmin = !!adminOpen && !liveOpen;
+      const onlyLive  = !!liveOpen  && !adminOpen;
+
+      mark(btnAdmin, onlyAdmin);
+      mark(btnAsst,  onlyLive);
+    }
 
 
 
@@ -752,69 +937,127 @@
     //   makeBtn('›', {disabled: currentPage===totalPages, pageNum: currentPage+1});
     // }
 
+    // ===== Pagination untuk MOBILE saja =====
+    let currentPage = 1;                 // dipakai hanya saat mobile
+    const PAGE_SIZE_MOBILE = 5;
+
+    function paginateMobile(list, page, size){
+      const totalPages = Math.max(1, Math.ceil(list.length / size));
+      const p = Math.min(Math.max(1, page || 1), totalPages);
+      const start = (p - 1) * size;
+      return { page: p, totalPages, slice: list.slice(start, start + size) };
+    }
+
+    function renderPaginationMobile(totalPages){
+      const isMobile = window.matchMedia('(max-width: 640px)').matches;
+      if (!isMobile || totalPages <= 1){
+        paginationWrap.classList.add('hidden');
+        paginationWrap.innerHTML = '';
+        return;
+      }
+      paginationWrap.classList.remove('hidden');
+      paginationWrap.innerHTML = '';
+
+      const makeBtn = (label, pageNum, disabled=false, active=false) => {
+        const b = document.createElement('button');
+        b.textContent = label;
+        b.className =
+          "px-3 py-1 rounded-full border text-sm " +
+          (active ? "bg-emerald-600 text-white border-emerald-600" : "bg-white") +
+          (disabled ? " opacity-50 cursor-not-allowed" : " hover:bg-gray-50");
+        if (!disabled) b.onclick = () => { currentPage = pageNum; renderResultsUI(); };
+        paginationWrap.appendChild(b);
+      };
+
+      makeBtn('‹', Math.max(1, currentPage-1), currentPage===1);
+      // tampilkan 1 … (p-1) p (p+1) … N
+      const windowPages = [1, currentPage-1, currentPage, currentPage+1, totalPages]
+        .filter((v,i,a) => v>=1 && v<=totalPages && a.indexOf(v)===i)
+        .sort((a,b)=>a-b);
+
+      let last = 0;
+      windowPages.forEach(p => {
+        if (p - last > 1){
+          const dots = document.createElement('span');
+          dots.textContent = '…';
+          dots.className = "px-2 text-gray-500";
+          paginationWrap.appendChild(dots);
+        }
+        makeBtn(String(p), p, false, p===currentPage);
+        last = p;
+      });
+
+      makeBtn('›', Math.min(totalPages, currentPage+1), currentPage===totalPages);
+    }
+
+
     // Function untuk menampilkan hasil pencarian dan memeriksa apakah ada hasil
     function renderResultsUI() {
       const q = (searchInput.value || '').trim();
-      // const { page, totalPages, slice } = paginate(FILTERED, currentPage, PAGE_SIZE);
-      // currentPage = page; // clamp
+      const isMobile = window.matchMedia('(max-width: 640px)').matches;
 
-      resultsWrap.classList.remove('hidden')
-      paginationWrap?.classList.add('hidden'); 
+      resultsWrap.classList.remove('hidden');
       resultsList.innerHTML = '';
 
-      if (!FILTERED.length) {
+      if (!FILTERED.length){
         resultsMeta.textContent = '0 hasil';
-        resultsList.innerHTML =
-          '<div class="py-6 px-3 text-gray-500">Tidak ada hasil. Coba kata kunci lain.</div>';
-        // renderPaginationCompact(1);                 // ← simpan sebagai komentar
+        resultsList.innerHTML = '<div class="py-6 px-3 text-gray-500">Tidak ada hasil. Coba kata kunci lain.</div>';
+        renderPaginationMobile(1);
         detailWrap.classList.add('hidden');
-        if (typeof refreshScrolllines === 'function') refreshScrolllines();
+        if (typeof refreshScrolllines==='function') refreshScrolllines();
         setPanelHeights();
         return;
       }
 
-      // resultsMeta.textContent = `${FILTERED.length} hasil – halaman ${currentPage} dari ${totalPages}`;
-      resultsMeta.textContent = `${FILTERED.length} hasil`;
+      if (isMobile){
+        // === MOBILE: pakai pagination agar list tidak panjang ===
+        const { page, totalPages, slice } = paginateMobile(FILTERED, currentPage, PAGE_SIZE_MOBILE);
+        currentPage = page; // clamp
+        resultsMeta.textContent = `${FILTERED.length} hasil – halaman ${page} dari ${totalPages}`;
 
-      // slice.forEach((item) => {
-      //   const li = document.createElement('li');
-      //   li.innerHTML = `
-      //     <button class="w-full text-left p-3 hover:bg-gray-50 focus:bg-emerald-50 outline-none rounded-lg"
-      //             data-id="${item.id}" data-type="${item.type}" tabindex="-1">
-      //       <div class="flex items-center gap-2">
-      //         <span class="rounded-full border px-2 py-0.5 text-xs text-gray-600">${item.category}</span>
-      //         <h3 class="font-medium">${highlight(item.title, q)}</h3>
-      //       </div>
-      //       <p class="mt-1 line-clamp-2 text-sm text-gray-600">
-      //         ${highlight((item.content || '').slice(0, 160) + ((item.content||'').length>160 ? '…':''), q)}
-      //       </p>
-      //     </button>`;
-      //   resultsList.appendChild(li);
-      // });
+        slice.forEach(item => {
+          const li = document.createElement('li');
+          li.innerHTML = `
+            <button class="w-full text-left p-3 hover:bg-gray-50 focus:bg-emerald-50 outline-none rounded-lg"
+                    data-id="${item.id}" data-type="${item.type}" tabindex="-1">
+              <div class="flex items-center gap-2">
+                <h3 class="font-semibold text-blue-700 ">${highlight(item.title, q)}</h3>
+              </div>
+              <p class="mt-1 line-clamp-2 text-sm text-gray-600">
+                ${highlight((item.content || '').slice(0, 160) + ((item.content||'').length>160 ? '…':''), q)}
+              </p>
+            </button>`;
+          resultsList.appendChild(li);
+        });
 
-      FILTERED.forEach((item) => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-          <button class="w-full text-left p-3 hover:bg-gray-50 focus:bg-emerald-50 outline-none rounded-lg"
-                  data-id="${item.id}" data-type="${item.type}" tabindex="-1">
-            <div class="flex items-center gap-2">
-              <span class="rounded-full border px-2 py-0.5 text-xs text-gray-600">${item.category}</span>
-              <h3 class="font-medium">${highlight(item.title, q)}</h3>
-            </div>
-            <p class="mt-1 line-clamp-2 text-sm text-gray-600">
-              ${highlight((item.content || '').slice(0, 160) + ((item.content||'').length>160 ? '…':''), q)}
-            </p>
-          </button>`;
-        resultsList.appendChild(li);
-      });
+        renderPaginationMobile(totalPages);
+      } else {
+        // === DESKTOP/TABLET: tampilkan semua, scroll di dalam box ===
+        resultsMeta.textContent = `${FILTERED.length} hasil`;
+        FILTERED.forEach(item => {
+          const li = document.createElement('li');
+          li.innerHTML = `
+            <button class="w-full text-left p-3 hover:bg-gray-50 focus:bg-emerald-50 outline-none rounded-lg"
+                    data-id="${item.id}" data-type="${item.type}" tabindex="-1">
+              <div class="flex items-center gap-2">
+                <span class="rounded-full border px-2 py-0.5 text-xs text-gray-600">${item.category}</span>
+                <h3 class="font-semibold text-blue-700">${highlight(item.title, q)}</h3>
+              </div>
+              <p class="mt-1 line-clamp-2 text-sm text-gray-600">
+                ${highlight((item.content || '').slice(0, 160) + ((item.content||'').length>160 ? '…':''), q)}
+              </p>
+            </button>`;
+          resultsList.appendChild(li);
+        });
+        paginationWrap.classList.add('hidden');
+      }
 
-      // renderPaginationCompact(totalPages);
       activeIndex = -1;
 
-      detailWrap.classList.remove('hidden'); 
-
-      if (typeof refreshScrolllines==='function') refreshScrolllines(); setPanelHeights();
+      if (typeof refreshScrolllines==='function') refreshScrolllines();
+      setPanelHeights();
     }
+
 
     function renderDetail(item) {
       if (!item) {
@@ -883,9 +1126,17 @@
       
       const q = searchInput.value.trim();
       if (!q){
-        setHeroCollapsed(false);
-        resultsWrap.classList.add('hidden');
-        detailWrap.classList.add('hidden');
+        if (isToolsOpen()){
+          // tetap di atas, tapi kosongkan hasil
+          updateSearchPosition();
+          resultsWrap.classList.add('hidden');
+          detailWrap.classList.add('hidden');
+          // route tetap dibersihkan
+          const params = stateToParams({ q: '', page: 1 });
+          replaceRoute(params);
+        } else {
+          showLanding();
+        }
         return;
       }
 
@@ -923,12 +1174,59 @@
       renderDetail(results[0]);
     }
 
-    // Helper: tutup aside kalau kosong
+    function applyAsideLayout() {
+      const aside  = document.getElementById('rightAside');
+      const middle = document.getElementById('middleCol');
+      const left   = document.getElementById('leftCol');
+
+      left.classList.remove('md:col-span-3','md:col-span-4');
+      middle.classList.remove('md:col-span-5','md:col-span-8');
+
+      if (aside.classList.contains('hidden')) {
+        left.classList.add('md:col-span-4');
+        middle.classList.add('md:col-span-8');
+        document.body.classList.remove('aside-open');
+      } else {
+        left.classList.add('md:col-span-3');
+        middle.classList.add('md:col-span-5');
+        document.body.classList.add('aside-open');
+      }
+      setPanelHeights();
+    }
+
+
+    function ensureAsideVisible() {
+      const aside = document.getElementById('rightAside');
+      if (!aside) return;
+      if (isMobile()) {
+        // di HP: selalu hidden supaya tidak bikin gap
+        if (!aside.classList.contains('hidden')) aside.classList.add('hidden');
+        return;
+      }
+      // desktop/tablet: boleh tampilkan
+      if (aside.classList.contains('hidden')) {
+        aside.classList.remove('hidden');
+        applyAsideLayout?.();
+      }
+    }
+
     function closeAsideIfEmpty() {
       const aside    = document.getElementById('rightAside');
       const adminBox = document.getElementById('adminBar');
       const liveBox  = document.getElementById('liveAssistantBox');
 
+      // ✅ Tambahan khusus HP: aside selalu disembunyikan agar tidak bikin gap.
+      // Tidak menyentuh indikator tombol, tidak panggil render lain → aman terhadap logika lama.
+      if (isMobile()) {
+        if (aside && !aside.classList.contains('hidden')) {
+          aside.classList.add('hidden');
+          document.body.classList.remove('aside-open');
+          if (typeof applyAsideLayout === 'function') applyAsideLayout();
+        }
+        return; // ← penting: hentikan di sini untuk HP
+      }
+
+      // ====== (di bawah ini persis seperti kode lama Anda) ======
       const adminOpen = !!(adminBox && !adminBox.classList.contains('hidden'));
       const liveOpen  = !!(liveBox  && !liveBox.classList.contains('hidden'));
 
@@ -954,40 +1252,35 @@
         if (typeof refreshScrolllines === 'function') refreshScrolllines();
         if (typeof setPanelHeights === 'function') setPanelHeights();
       }
-      
+
       if (typeof restoreSearchPositionIfNeeded === 'function') {
         restoreSearchPositionIfNeeded();
       }
     }
+    function hideAllToolsPanels() {
+      const adminBox = document.getElementById('adminBar');
+      const liveBox  = document.getElementById('liveAssistantBox');
 
+      // Sembunyikan keduanya (tidak reset nilai/input apapun)
+      if (adminBox) adminBox.classList.add('hidden');
+      if (liveBox)  liveBox.classList.add('hidden');
 
-    function applyAsideLayout() {
-      const aside  = document.getElementById('rightAside');
-      const middle = document.getElementById('middleCol');
-      const left   = document.getElementById('leftCol');
+      // HP: sembunyikan host mobile kalau ada
+      const host = document.getElementById('toolsMobileHost');
+      if (host) host.classList.add('hidden');
 
-      left.classList.remove('md:col-span-3','md:col-span-4');
-      middle.classList.remove('md:col-span-5','md:col-span-8');
-
-      if (aside.classList.contains('hidden')) {
-        left.classList.add('md:col-span-4');
-        middle.classList.add('md:col-span-8');
-        document.body.classList.remove('aside-open');
-      } else {
-        left.classList.add('md:col-span-3');
-        middle.classList.add('md:col-span-5');
-        document.body.classList.add('aside-open');
+      // Reset indikator tombol
+      if (typeof setToolsIndicator === 'function') {
+        setToolsIndicator({ adminOpen:false, liveOpen:false });
       }
-      setPanelHeights();
-    }
 
-    function ensureAsideVisible(){
-      const aside = document.getElementById('rightAside');
-      if (aside.classList.contains('hidden')) {
-        aside.classList.remove('hidden');
-        applyAsideLayout();
-      }
-    }
+      // Rapikan layout & posisi
+      if (typeof closeAsideIfEmpty === 'function') closeAsideIfEmpty();
+      if (typeof applyAsideLayout   === 'function') applyAsideLayout();
+      if (typeof refreshScrolllines === 'function') refreshScrolllines();
+      if (typeof setPanelHeights    === 'function') setPanelHeights();
+      if (typeof restoreSearchPositionIfNeeded === 'function') restoreSearchPositionIfNeeded();
+    } 
 
     function toggleAsideBtn() {
       const aside = document.getElementById('rightAside');
@@ -1000,122 +1293,169 @@
 
     // ===== Hamburger → topActions (panel kecil)
     function toggleTopActions(){
-      const panel = document.getElementById('topActions');   
+      const panel = document.getElementById('topActions');
       const btn   = document.getElementById('toggleAsideBtn');
-      const willShow = panel.classList.contains('hidden');
+      const mobile = isMobile();
+      const willShow = panel.classList.contains('hidden');  // true = akan dibuka
 
-      // gunakan tools-open (BUKAN aside-open)
-      if (willShow) document.body.classList.add('tools-open');
-      else document.body.classList.remove('tools-open');
-
+      // Tampil/sembunyi baris tombol
       panel.classList.toggle('hidden');
       btn.setAttribute('aria-expanded', String(willShow));
 
-      if (!willShow){
-        document.getElementById('adminBar')?.classList.add('hidden');
-        document.getElementById('liveAssistantBox')?.classList.add('hidden');
+      // Desktop boleh geser layout; HP jangan
+      if (!mobile) document.body.classList.toggle('tools-open', willShow);
+      else document.body.classList.remove('tools-open');
+
+      // ❗ Saat DITUTUP → tutup semua isi tools
+      if (!willShow) {
+        hideAllToolsPanels();
+      } else {
+        // Saat dibuka di HP, pastikan host mobile sudah tepat posisinya
+        if (mobile && typeof syncToolsMount === 'function') syncToolsMount();
       }
-      closeAsideIfEmpty();
     }
 
-    // Tutup topActions saat klik di luar / ESC
-    document.addEventListener('click', (e)=>{
-      const box = document.getElementById('topActions');
-      const btn = document.getElementById('toggleAsideBtn');
-      if (!box || box.classList.contains('hidden')) return;
-      if (!box.contains(e.target) && !btn.contains(e.target)){
-        box.classList.add('hidden');
-        btn?.setAttribute('aria-expanded','false');
-        document.body.classList.remove('tools-open'); // ← ganti
+    // Helper: apakah klik berada di "zona aman" (tidak menutup menu/panel)
+    // function isInToolsSafeZone(target){
+    //   const top   = document.getElementById('topActions');
+    //   const btn   = document.getElementById('toggleAsideBtn');
+    //   const admin = document.getElementById('adminBar');
+    //   const live  = document.getElementById('liveAssistantBox');
+    //   const host  = document.getElementById('toolsMobileHost'); // host mobile di bawah search
+    //   const aside = document.getElementById('rightAside');      // panel di desktop
+
+    //   return (
+    //     (top   && top.contains(target))   ||
+    //     (btn   && btn.contains(target))   ||
+    //     (admin && admin.contains(target)) ||
+    //     (live  && live.contains(target))  ||
+    //     (host  && host.contains(target))  ||
+    //     (aside && aside.contains(target))
+    //   );
+    // }
+
+    // // Tutup TopActions & SEMUA panel HANYA jika klik benar-benar di luar SEMUA zona aman
+    // document.addEventListener('click', (e) => {
+    //   const box = document.getElementById('topActions');
+    //   const btn = document.getElementById('toggleAsideBtn');
+    //   if (!box || box.classList.contains('hidden')) return;
+
+    //   if (isInToolsSafeZone(e.target)) return; // ⬅️ klik di area aman: jangan tutup
+
+    //   box.classList.add('hidden');
+    //   btn?.setAttribute('aria-expanded','false');
+    //   document.body.classList.remove('tools-open');
+
+    //   // tutup semua isi tools (admin/live) sesuai kebijakan kamu
+    //   hideAllToolsPanels();
+    // });
+
+    // // ESC selalu menutup (tetap sama)
+    // document.addEventListener('keydown', (e) => {
+    //   if (e.key !== 'Escape') return;
+    //   const box = document.getElementById('topActions');
+    //   const btn = document.getElementById('toggleAsideBtn');
+    //   if (!box || box.classList.contains('hidden')) return;
+
+    //   box.classList.add('hidden');
+    //   btn?.setAttribute('aria-expanded','false');
+    //   document.body.classList.remove('tools-open');
+    //   hideAllToolsPanels();
+    // });
+
+
+    // ===== Mobile tools host (menaruh Admin/Live di bawah search saat HP) =====
+    function getMobileToolsHost() {
+      if (!isMobile()) return null;
+      const searchRow  = document.getElementById('searchRow');
+      const topActions = document.getElementById('topActions');
+      if (!searchRow || !topActions) return null;
+
+      let host = document.getElementById('toolsMobileHost');
+      if (!host) {
+        host = document.createElement('div');
+        host.id = 'toolsMobileHost';
+        host.className = 'mt-2 space-y-3'; // biar rapi
       }
-    });
-    document.addEventListener('keydown',(e)=>{
-      if (e.key === 'Escape'){
-        const box = document.getElementById('topActions');
-        const btn = document.getElementById('toggleAsideBtn');
-        if (!box?.classList.contains('hidden')){
-          box.classList.add('hidden');
-          btn?.setAttribute('aria-expanded','false');
-          document.body.classList.remove('tools-open'); // ← ganti
-        }
+      // Pastikan host PERSIS setelah #topActions
+      if (host.parentElement !== searchRow || host.previousElementSibling !== topActions) {
+        searchRow.insertBefore(host, topActions.nextSibling);
       }
-    });
-
-    // ===== Helpers untuk TopActions & highlight tombol =====
-    function setToolsIndicator({ adminOpen, liveOpen }) {
-      const btnAdmin = document.getElementById('btnAdminToggle');
-      const btnAsst  = document.getElementById('btnAssistToggle');
-
-      const mark = (btn, active) => {
-        if (!btn) return;
-        // Bersihkan SEMUA warna yang mungkin pernah dipakai
-        btn.classList.remove(
-          'text-blue-700','text-indigo-700','text-green-700','text-emerald-700',
-          'font-bold','font-semibold'
-        );
-        // Set state baru
-        if (active) {
-          btn.classList.add('text-blue-700','font-bold'); // aktif = biru + bold
-          btn.setAttribute('aria-pressed','true');
-        } else {
-          btn.classList.add('font-semibold');             // nonaktif = balik semula
-          btn.setAttribute('aria-pressed','false');
-          // Optional: kalau mau paksa benar-benar netral, kosongkan inline color:
-          btn.style.color = '';
-        }
-      };
-
-      // Eksklusif: hanya satu aktif
-      const onlyAdmin = !!adminOpen && !liveOpen;
-      const onlyLive  = !!liveOpen  && !adminOpen;
-
-      mark(btnAdmin, onlyAdmin);
-      mark(btnAsst,  onlyLive);
+      return host;
     }
 
+    function mountToolPanel(panelEl){
+      if (!panelEl) return;
+      const aside = document.getElementById('rightAside');
 
-    // ===== Admin & Assistance
+      if (isMobile()) {
+        const host = getMobileToolsHost();
+        if (host && panelEl.parentElement !== host) host.appendChild(panelEl);
+        // aside tetap hidden di HP (kamu sudah punya guardnya)
+      } else {
+        if (aside && panelEl.parentElement !== aside) aside.appendChild(panelEl);
+      }
+    }
+
+    // Sinkron mounting & posisi host saat resize/orientasi
+    function syncToolsMount(){
+      const host = getMobileToolsHost(); // ini juga menjamin posisi host sesudah topActions
+      ['adminBar','liveAssistantBox'].forEach(id=>{
+        const el = document.getElementById(id);
+        if (el) mountToolPanel(el);
+      });
+    }
+    window.addEventListener('resize', syncToolsMount);
+
+    function hideTopActions(){
+      const panel = document.getElementById('topActions');
+      const btn   = document.getElementById('toggleAsideBtn');
+      if (!panel) return;
+      panel.classList.add('hidden');
+      btn?.setAttribute('aria-expanded','false');
+      document.body.classList.remove('tools-open'); // jaga2 desktop
+    }
+
     function toggleAdminBar(force) {
       const adminBox = document.getElementById('adminBar');
       const liveBox  = document.getElementById('liveAssistantBox');
 
-      // tentukan apakah akan membuka admin
       const willOpen = (typeof force === 'boolean')
         ? force
         : adminBox.classList.contains('hidden');
 
       if (willOpen) {
-        // buka Admin, tutup Live — eksklusif
         adminBox.classList.remove('hidden');
         if (liveBox && !liveBox.classList.contains('hidden')) liveBox.classList.add('hidden');
 
-        // naikkan search + pastikan aside tampil
-        moveSearchToTopForTools();
-        ensureAsideVisible();
+        if (isMobile()) {
+          mountToolPanel(adminBox);
+          mountToolPanel(liveBox);   // pastikan dua-duanya berada di host yg sama
+          // ❌ JANGAN hide topActions di HP
+        } else {
+          moveSearchToTopForTools?.();
+          ensureAsideVisible();      // buka aside di desktop
+          mountToolPanel(adminBox);
+        }
       } else {
-        // tutup Admin
         adminBox.classList.add('hidden');
       }
 
-        // ⬇️ TARUH DI SINI — setelah visibilitas berubah
-      if (adminBox.classList.contains('hidden') && liveBox.classList.contains('hidden')) {
-        setToolsIndicator({ adminOpen: false, liveOpen: false });
-      } else {
-        setToolsIndicator({
-          adminOpen: !adminBox.classList.contains('hidden'),
-          liveOpen : !liveBox.classList.contains('hidden')
-        });
-      }
+      // indikator eksklusif
+      setToolsIndicator({
+        adminOpen: !adminBox.classList.contains('hidden'),
+        liveOpen : !liveBox.classList.contains('hidden')
+      });
 
-      // update layout & indikator
       closeAsideIfEmpty();
-      applyAsideLayout();
-      attachScrollline(adminBox, adminBox);
-      refreshScrolllines();
-      setPanelHeights();
-
-      restoreSearchPositionIfNeeded();
+      applyAsideLayout?.();
+      attachScrollline?.(adminBox, adminBox);
+      refreshScrolllines?.();
+      setPanelHeights?.();
+      restoreSearchPositionIfNeeded?.();
+      updateSearchPosition();
     }
+
 
     function toggleLiveAssistant() {
       const adminBox = document.getElementById('adminBar');
@@ -1124,64 +1464,96 @@
       const willOpen = liveBox.classList.contains('hidden');
 
       if (willOpen) {
-        // buka Live, tutup Admin — eksklusif
         liveBox.classList.remove('hidden');
         if (adminBox && !adminBox.classList.contains('hidden')) adminBox.classList.add('hidden');
 
-        moveSearchToTopForTools();
-        ensureAsideVisible();
+        if (isMobile()) {
+          mountToolPanel(liveBox);
+          mountToolPanel(adminBox);
+          // ❌ JANGAN hide topActions di HP
+        } else {
+          moveSearchToTopForTools?.();
+          ensureAsideVisible();
+          mountToolPanel(liveBox);
+        }
       } else {
-        // tutup Live
         liveBox.classList.add('hidden');
       }
 
-      // ⬇️ TARUH DI SINI — setelah visibilitas berubah
-      if (adminBox.classList.contains('hidden') && liveBox.classList.contains('hidden')) {
-        setToolsIndicator({ adminOpen: false, liveOpen: false });
-      } else {
-        setToolsIndicator({
-          adminOpen: !adminBox.classList.contains('hidden'),
-          liveOpen : !liveBox.classList.contains('hidden')
-        });
-      }
-      closeAsideIfEmpty();
-      applyAsideLayout();
-      attachScrollline(liveBox, liveBox);
-      refreshScrolllines();
-      setPanelHeights();
+      setToolsIndicator({
+        adminOpen: !adminBox.classList.contains('hidden'),
+        liveOpen : !liveBox.classList.contains('hidden')
+      });
 
-      restoreSearchPositionIfNeeded();
+      closeAsideIfEmpty();
+      applyAsideLayout?.();
+      attachScrollline?.(liveBox, liveBox);
+      refreshScrolllines?.();
+      setPanelHeights?.();
+      restoreSearchPositionIfNeeded?.();
+      updateSearchPosition();
     }
+
+
 
     // ===== Events =====
     searchForm.addEventListener('submit', doSearch);
     searchInput.addEventListener('input', (e) => {
       clearBtn.classList.toggle('hidden', !e.target.value.length);
 
+      // kalau kosong
       if (!e.target.value.trim()){
-        setHeroCollapsed(false);       
-        resultsWrap.classList.add('hidden');
-        detailWrap.classList.add('hidden');
+        // ⬇️ ganti: JANGAN turun ke landing kalau tools terbuka
+        if (isToolsOpen()){
+          // tetap di atas, tapi sembunyikan panel hasil
+          updateSearchPosition();
+          resultsWrap.classList.add('hidden');
+          detailWrap.classList.add('hidden');
+        } else {
+          showLanding();  // perilaku lama
+        }
         return;
       }
 
+      // kalau sudah pernah search → langsung filter & naikkan hero
       if (searched){
         applyFilter();
-        // currentPage = 1;
-        renderResultsUI(); renderDetail(FILTERED[0] || null);
-        setHeroCollapsed(true);             
+        renderResultsUI();
+        renderDetail(FILTERED[0] || null);
+        showSearch();
       }
     });
 
+
     clearBtn.addEventListener('click', () => {
+      // kosongkan input & tombol clear disembunyikan
       searchInput.value = '';
       clearBtn.classList.add('hidden');
-      setHeroCollapsed(false);
-      resultsWrap.classList.add('hidden');
-      detailWrap.classList.add('hidden');
-      activeItem = null;
-      // currentPage = 1;
-      replaceRoute(stateToParams({ q: '', page: 1 }));
+
+      // Selalu reset hasil & halaman
+      FILTERED = [];
+      currentPage = 1;
+
+      // Kunci: kalau tools (Admin/Live) sedang terbuka → tetap di ATAS
+      if (typeof isToolsOpen === 'function' && isToolsOpen()) {
+        // tetap mode search di atas, tapi sembunyikan panel hasil
+        setHeroCollapsed(true);
+        document.body.classList.add('search-mode');
+        resultsWrap.classList.add('hidden');
+        detailWrap.classList.add('hidden');
+
+        // bersihkan URL query tanpa memicu render ulang
+        const params = stateToParams({ q: '', page: 1 });
+        replaceRoute(params);
+      } else {
+        // normal: kembali ke landing (search di tengah)
+        showLanding();
+      }
+
+      // rapikan UI
+      resultsList.innerHTML = '';
+      if (typeof refreshScrolllines === 'function') refreshScrolllines();
+      if (typeof setPanelHeights === 'function') setPanelHeights();
     });
 
 
@@ -1511,24 +1883,42 @@
         renderDetail(FILTERED[0] || null);
       }
       refreshScrolllines();     // <-- update garis setelah render
+      updateSearchPosition();
     });
 
     // Boot: baca URL params kalau ada
     (async function boot(){
       const { q,  /* page, */ id, type } = readRoute();
       if (!ITEMS.length) await fetchData();
+      const isMobile = window.matchMedia('(max-width: 640px)').matches;
 
       if (!q) {
         showLanding();
         renderAdminState();
 
-        // kiri: turunkan rentang bawah → gapBottom kecil (0–4 px)
-        attachScrollline(document.getElementById('resultsList'), null, { gapTop: 50, gapBottom: -30 });
+        /* kiri */
+        attachScrollline(
+          document.getElementById('resultsList'),
+          null,
+          isMobile ? { gapTop: 36, gapBottom: 4, width: 12 } : { gapTop: 50, gapBottom: -30 }
+        );
 
-        // tengah & kanan (biarkan default, atau atur sendiri)
-        attachScrollline(document.getElementById('detailWrap'), document.getElementById('middleCol'));
-        attachScrollline(document.getElementById('adminBar'), document.getElementById('rightAside'));
-        attachScrollline(document.getElementById('liveAssistantBox'), document.getElementById('rightAside'));
+        /* tengah & kanan */
+        attachScrollline(
+          document.getElementById('detailWrap'),
+          document.getElementById('middleCol'),
+          isMobile ? { width: 12 } : {}
+        );
+        attachScrollline(
+          document.getElementById('adminBar'),
+          document.getElementById('rightAside'),
+          isMobile ? { width: 12 } : {}
+        );
+        attachScrollline(
+          document.getElementById('liveAssistantBox'),
+          document.getElementById('rightAside'),
+          isMobile ? { width: 12 } : {}
+        );
 
         refreshScrolllines();
         setPanelHeights();
@@ -1557,19 +1947,36 @@
       replaceRoute(stateToParams({ q: searchInput.value.trim(), page: currentPage, id, type }));
       renderAdminState();
 
-      // pasang garis setelah DOM/box siap
-      // kiri: turunkan rentang bawah → gapBottom kecil (0–4 px)
-      attachScrollline(document.getElementById('resultsList'), null, { gapTop: 50, gapBottom: -30 });
+      /* kiri */
+      attachScrollline(
+        document.getElementById('resultsList'),
+        null,
+        isMobile ? { gapTop: 36, gapBottom: 4, width: 12 } : { gapTop: 50, gapBottom: -30 }
+      );
 
-      // tengah & kanan (biarkan default, atau atur sendiri)
-      attachScrollline(document.getElementById('detailWrap'), document.getElementById('middleCol'));
-      attachScrollline(document.getElementById('adminBar'), document.getElementById('rightAside'));
-      attachScrollline(document.getElementById('liveAssistantBox'), document.getElementById('rightAside'));
+      /* tengah & kanan */
+      attachScrollline(
+        document.getElementById('detailWrap'),
+        document.getElementById('middleCol'),
+        isMobile ? { width: 12 } : {}
+      );
+      attachScrollline(
+        document.getElementById('adminBar'),
+        document.getElementById('rightAside'),
+        isMobile ? { width: 12 } : {}
+      );
+      attachScrollline(
+        document.getElementById('liveAssistantBox'),
+        document.getElementById('rightAside'),
+        isMobile ? { width: 12 } : {}
+      );
       refreshScrolllines();
       setPanelHeights();
+      updateSearchPosition();
     })();
 
     applyAsideLayout();
+    
   </script>
 </body>
 </html>
