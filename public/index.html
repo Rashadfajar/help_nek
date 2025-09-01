@@ -162,6 +162,10 @@
     /* Jangan clip bayangan di level kolom */
     #leftCol, #middleCol, #rightAside { overflow: visible !important; }
 
+    /* jaga agar newline tampil sebagai baris baru */
+    #detailBody { white-space: pre-line; }
+
+
     /* ===========================
       Tablet+ : kembalikan animasi lebar form
     ============================ */
@@ -1150,6 +1154,11 @@
       activeItem = item;
       detailCat.textContent = item.category || '';
       detailTitle.textContent = item.title || '';
+      
+      const html = (item.content || '')
+        .replace(/\r\n/g, '\n')
+        .replace(/\\n/g, '\n');
+
       detailBody.innerHTML = item.content || '';
 
       const imgUrl = normalizeImageUrl(item.image_url);
