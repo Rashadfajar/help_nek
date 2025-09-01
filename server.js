@@ -158,7 +158,7 @@ app.put('/glossary/:id', checkAdmin, async (req, res) => {
     const { id } = req.params;
     const { title, content, link_url, image_url } = req.body || {};
     if (!title || !content) return res.status(400).json({ error: 'title & content wajib' });
-    const [r] = await pool.execute('UPDATE glossary SET term=?, definition=? WHERE id=?', [title, content, link_url || null, image_url || null, id]);
+    const [r] = await pool.execute('UPDATE glossary SET term=?, definition=? , link_url=?, image_url=? WHERE id=?', [title, content, link_url || null, image_url || null, id]);
     if (r.affectedRows === 0) return res.status(404).json({ error: 'Istilah tidak ditemukan' });
     res.json({ id: Number(id), title, content, link_url: link_url || null, image_url: image_url || null});
   } catch (e) {
