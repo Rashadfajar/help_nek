@@ -179,6 +179,77 @@ app.delete('/glossary/:id', checkAdmin, async (req, res) => {
   }
 });
 
+// ====== Akronim (MySQL) ======
+app.get('/akronim', async (_req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT id, title, content, link_url FROM akronim ORDER BY title ASC'
+    );
+    res.json(rows);
+  } catch (e) {
+    console.error('Akronim GET error:', e);
+    res.status(500).json({ error: 'Gagal mengambil data akronim' });
+  }
+});
+
+app.post('/akronim', checkAdmin, async (req, res) => {
+  try {
+    const { title, content, link_url } = req.body || {};
+    if (!title || !content) return res.status(400).json({ error: 'title & content required' });
+
+    const [r] = await pool.execute(
+      'INSERT INTO akronim (title, content, link_url) VALUES (?,?,?)',
+      [title, content, link_url || null]
+    );
+
+    const [rows] = await pool.query(
+      'SELECT id, title, content, link_url FROM akronim WHERE id=?',
+      [r.insertId]
+    );
+    res.status(201).json(rows[0]);
+  } catch (e) {
+    console.error('Akronim POST error:', e);
+    res.status(500).json({ error: 'Gagal menambah akronim' });
+  }
+});
+
+app.put('/akronim/:id', checkAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, content, link_url } = req.body || {};
+    if (!title || !content) return res.status(400).json({ error: 'title & content required' });
+
+    const [r] = await pool.execute(
+      'UPDATE akronim SET title=?, content=?, link_url=?, updated_at=CURRENT_TIMESTAMP WHERE id=?',
+      [title, content, link_url || null, id]
+    );
+    if (r.affectedRows === 0) return res.status(404).json({ error: 'Not found' });
+
+    const [rows] = await pool.query(
+      'SELECT id, title, content, link_url FROM akronim WHERE id=?',
+      [id]
+    );
+    res.json(rows[0]);
+  } catch (e) {
+    console.error('Akronim PUT error:', e);
+    res.status(500).json({ error: 'Gagal memperbarui akronim' });
+  }
+});
+
+app.delete('/akronim/:id', checkAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [r] = await pool.execute('DELETE FROM akronim WHERE id=?', [id]);
+    if (r.affectedRows === 0) return res.status(404).json({ error: 'Not found' });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('Akronim DELETE error:', e);
+    res.status(500).json({ error: 'Gagal menghapus akronim' });
+  }
+});
+
+
+
 // --- START SERVER (satu kali saja) ---
 app.listen(PORT, () => {
   console.log(`Server berjalan di :${PORT}`);

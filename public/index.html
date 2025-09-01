@@ -21,7 +21,7 @@
       display: flex;
       flex-direction: column;
       min-height: 0;
-      padding: 3rem 0 var(--footer-h);
+      padding: 1rem 0 var(--footer-h);
     }
     #mainGrid { flex: 1 1 auto; min-height: 0; overflow: hidden; }
 
@@ -42,7 +42,25 @@
     #resultsWrap { min-height: 0; }
     #resultsList { flex: 1 1 auto; overflow: auto; overscroll-behavior: contain; }
     #detailWrap  { flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; }
-    #adminBar, #liveAssistantBox { max-height: 100%; overflow: auto; overscroll-behavior: contain; }
+    #adminBar, #liveAssistantBox{ max-height: 100%; overflow: auto; overscroll-behavior: contain; }
+   /* Desktop: Akronim = flex column, scroller di bawah filter */
+    #akronimBox{
+      display:flex;            /* ⬅️ penting */
+      flex-direction:column;   /* ⬅️ penting */
+      min-height:0;
+      height:100%;
+      overflow:hidden;         /* list scroll di child, bukan di sini */
+    }
+    #akronimBox:not(.hidden){ display:flex; flex-direction:column; }
+
+    /* pastikan akronim bisa benar2 ketutup */
+    #akronimBox.hidden{ display: none !important; }
+    #akronimScroll{
+      flex:1 1 auto;           /* ⬅️ ambil sisa tinggi kartu */
+      min-height:0;
+      overflow:auto;           /* ⬅️ scroller hanya di sini */
+      overscroll-behavior:contain;
+    }
 
     /* Background */
     .bg-custom {
@@ -84,6 +102,7 @@
     }
     .hide-native-scroll { scrollbar-width: none; }
     .hide-native-scroll::-webkit-scrollbar { width: 0; height: 0; }
+    
 
     /* ===========================
       HERO
@@ -134,7 +153,8 @@
     #resultsWrap,        /* kiri */
     #detailWrap,         /* tengah */
     #adminBar,           /* kanan: Admin */
-    #liveAssistantBox {  /* kanan: Live Assistance */
+    #liveAssistantBox, 
+    #akronimBox {  /* kanan: Live Assistance */
       box-shadow:
         0 14px 28px rgba(0,0,0,.12),
         0 10px 10px rgba(0,0,0,.06);
@@ -247,6 +267,17 @@
 
       /* Pagination area tampil di HP */
       #paginationWrap { display: flex !important; }
+
+      #akronimBox{
+        height:auto !important;
+        max-height:none !important;
+        overflow:visible !important;
+      }
+      #akronimScroll{
+        height:auto !important;
+        max-height:none !important;
+        overflow:visible !important;
+      }
     }
     /* bantu wrapping judul agar rapi di layar sempit */
     @supports (text-wrap: balance){
@@ -259,7 +290,7 @@
   <div id="appShell" class="max-w-6xl mx-auto h-full flex flex-col px-4 md:px-6 pt-4 pb-2">
     <!-- HERO WRAP -->
     <section id="heroWrap" class="hero">
-      <div class="max-w-6xl mx-auto px-4 md:px-6 py-4 md:py-4">
+      <div class="max-w-6xl mx-auto px-1.5 md:px-6 py-4 md:py-4">
         <!-- Header -->
         <div id="logoTitle" class="mb-6">
           <div class="mx-auto w-full max-w-3xl">
@@ -327,13 +358,18 @@
               </div>
             </button>
             <div id="topActions" class=" hidden flex gap-2">
+              <button id="btnAkronimToggle" onclick="toggleAkronim()"
+                class="rounded-2xl border bg-white px-4 shadow-sm text-sm font-semibold text-blue-700 hover:text-green-700">
+                Akronim
+              </button>
+
               <button id="btnAdminToggle" onclick="toggleAdminBar()"
-                class="rounded-2xl border bg-white px-4 shadow-sm text-sm font-semibold hover:text-green-700"
+                class="rounded-2xl border bg-white px-4 shadow-sm text-sm font-semibold text-blue-700 hover:text-green-700"
                 title="Mode Admin">+Tambah Informasi
               </button>
 
               <button id="btnAssistToggle" onclick="toggleLiveAssistant()"
-                class="rounded-2xl border bg-white px-4 shadow-sm text-sm font-semibold hover:text-green-700">
+                class="rounded-2xl border bg-white px-4 shadow-sm text-sm font-semibold text-blue-700 hover:text-green-700">
                 Live Assistance
               </button>
             </div>
@@ -351,7 +387,7 @@
           <ul id="resultsList"
             class="divide-y flex-1 overflow-auto overscroll-contain hide-native-scroll"
             tabindex="0" aria-label="Daftar hasil"></ul>
-          <div id="paginationWrap" class="hidden px-3 py-3 border-t"></div>
+          <div id="paginationWrap" class="hidden px-3 py-3 border-t flex justify-center"></div>
         </div>
       </section>
 
@@ -451,11 +487,48 @@
               <p class="mb-3 text-xs text-gray-500">Drive direct: https://lh3.googleusercontent.com/d/FILE_ID=w1200</p>
               <button id="gloAddBtn" class="w-full px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Tambah Istilah</button>
             </div>
+            <!-- Tambah Akronim -->
+            <div class="bg-white p-4 border rounded-xl shadow-sm w-full">
+              <h3 class="font-semibold mb-3 text-sky-700">Tambah Akronim</h3>
+              <input id="akrTitle" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    placeholder="Singkatan (title), mis. MRV"/>
+              <textarea id="akrContent" rows="3"
+                class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                placeholder="Kepanjangan / penjelasan (content)"></textarea>
+              <input id="akrUrlLink" type="url"
+                class="w-full p-2 border rounded mb-3 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                placeholder="URL Link (opsional)"/>
+              <button id="akrAddBtn"
+                class="w-full px-3 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700">Tambah Akronim</button>
+            </div>
           </div>
         </div>
 
+        <!-- Panel Akronim (list tabel akronim) -->
+        <div id="akronimBox"
+            class="hidden h-full rounded-2xl border bg-white p-4 shadow-sm border-2 border-blue-500">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-sky-700">Daftar Akronim</h3>
+          </div>
+
+          <!-- Filter TETAP DI LUAR scroller -->
+          <input id="akrFilter" placeholder="Filter akronim…"
+            class="mt-3 w-full rounded-xl border px-3 py-2 outline-none bg-white sticky top-0 z-10" />
+
+          <!-- Inilah area yang scroll -->
+          <div id="akronimScroll"
+              class="mt-3 flex-1 overflow-auto overscroll-contain hide-native-scroll relative">
+            <table class="w-full text-sm">
+              <tbody id="akronimList"></tbody>
+            </table>
+          </div>
+
+          <!-- Pagination untuk HP -->
+          <div id="akrPaginationWrap" class="mt-2 flex items-center justify-center gap-1 sm:hidden"></div>
+        </div>
+
         <!-- Kotak Live Assistance -->
-       <div id="liveAssistantBox" class="hidden mt-4 rounded-2xl border bg-violet-50 p-5 shadow-sm max-h-full overflow-auto overscroll-contain hide-native-scroll">
+        <div id="liveAssistantBox" class="hidden mt-4 rounded-2xl border bg-violet-50 p-5 shadow-sm max-h-full overflow-auto overscroll-contain hide-native-scroll">
           <h3 class="text-lg font-semibold">Live Assistance via Email</h3>
           <p class="mt-1 text-sm text-gray-600">Butuh bantuan? Kirim pertanyaan Anda melalui email.</p>
           <input id="assistantSubject" placeholder="Subjek email" class="mt-3 w-full rounded-xl border px-3 py-2 outline-none" />
@@ -604,7 +677,7 @@
     function setPanelHeights() {
 
       if (window.innerWidth <= 640) {
-        ['resultsWrap','detailWrap','adminBar','liveAssistantBox'].forEach(id=>{
+        ['resultsWrap','detailWrap','adminBar','liveAssistantBox, '].forEach(id=>{
           const el = document.getElementById(id);
           if (el){ el.style.height = ''; el.style.maxHeight = ''; el.style.overflow = ''; }
         });
@@ -643,8 +716,10 @@
     function isToolsOpen(){
       const adminBox = document.getElementById('adminBar');
       const liveBox  = document.getElementById('liveAssistantBox');
+      const akrBox   = document.getElementById('akronimBox');
       return (!!adminBox && !adminBox.classList.contains('hidden')) ||
-            (!!liveBox  && !liveBox.classList.contains('hidden'));
+            (!!liveBox  && !liveBox.classList.contains('hidden'))  ||
+            (!!akrBox   && !akrBox.classList.contains('hidden'));
     }
 
     function updateSearchPosition(){
@@ -809,36 +884,32 @@
       }
     }
 
-    function setToolsIndicator({ adminOpen, liveOpen }) {
+    function setToolsIndicator({ adminOpen=false, akronimOpen=false, liveOpen=false }) {
       const btnAdmin = document.getElementById('btnAdminToggle');
+      const btnAkr   = document.getElementById('btnAkronimToggle');
       const btnAsst  = document.getElementById('btnAssistToggle');
 
-      const mark = (btn, active) => {
-        if (!btn) return;
-        // Bersihkan SEMUA warna yang mungkin pernah dipakai
-        btn.classList.remove(
-          'text-blue-700','text-indigo-700','text-green-700','text-emerald-700',
-          'font-bold','font-semibold'
-        );
-        // Set state baru
-        if (active) {
-          btn.classList.add('text-blue-700','font-bold'); // aktif = biru + bold
-          btn.setAttribute('aria-pressed','true');
-        } else {
-          btn.classList.add('font-semibold');             // nonaktif = balik semula
-          btn.setAttribute('aria-pressed','false');
-          // Optional: kalau mau paksa benar-benar netral, kosongkan inline color:
-          btn.style.color = '';
-        }
+      const reset = (el) => {
+        if (!el) return;
+        el.classList.remove('text-green-700','text-sky-700','text-indigo-700','font-bold');
+        el.classList.add('font-semibold');
+        el.setAttribute('aria-pressed','false');
+        el.style.color = '';
+      };
+      const mark = (el, cls) => {
+        if (!el) return;
+        el.classList.remove('font-semibold');
+        el.classList.add(cls,'font-bold');
+        el.setAttribute('aria-pressed','true');
       };
 
-      // Eksklusif: hanya satu aktif
-      const onlyAdmin = !!adminOpen && !liveOpen;
-      const onlyLive  = !!liveOpen  && !adminOpen;
+      reset(btnAdmin); reset(btnAkr); reset(btnAsst);
 
-      mark(btnAdmin, onlyAdmin);
-      mark(btnAsst,  onlyLive);
+      if (adminOpen)   mark(btnAdmin,'text-blue-700');
+      if (akronimOpen) mark(btnAkr,'text-blue-700');
+      if (liveOpen)    mark(btnAsst,'text-blue-700');
     }
+
 
 
 
@@ -940,6 +1011,8 @@
     // ===== Pagination untuk MOBILE saja =====
     let currentPage = 1;                 // dipakai hanya saat mobile
     const PAGE_SIZE_MOBILE = 5;
+    let akrCurrentPage = 1;
+    const PAGE_SIZE_MOBILE_AKR = (typeof PAGE_SIZE_MOBILE !== 'undefined' && PAGE_SIZE_MOBILE) ? PAGE_SIZE_MOBILE : 8;
 
     function paginateMobile(list, page, size){
       const totalPages = Math.max(1, Math.ceil(list.length / size));
@@ -1214,6 +1287,7 @@
       const aside    = document.getElementById('rightAside');
       const adminBox = document.getElementById('adminBar');
       const liveBox  = document.getElementById('liveAssistantBox');
+      const akrBox   = document.getElementById('akronimBox');
 
       // ✅ Tambahan khusus HP: aside selalu disembunyikan agar tidak bikin gap.
       // Tidak menyentuh indikator tombol, tidak panggil render lain → aman terhadap logika lama.
@@ -1229,9 +1303,10 @@
       // ====== (di bawah ini persis seperti kode lama Anda) ======
       const adminOpen = !!(adminBox && !adminBox.classList.contains('hidden'));
       const liveOpen  = !!(liveBox  && !liveBox.classList.contains('hidden'));
+      const akrOpen = !!(akrBox && ! akrBox.classList.contains('hidden'));
 
       // kalau dua-duanya tertutup → tutup aside & reset tanda tombol
-      if (!adminOpen && !liveOpen) {
+      if (!adminOpen && !liveOpen && !akrOpen) {
         if (aside && !aside.classList.contains('hidden')) {
           aside.classList.add('hidden');
         }
@@ -1260,10 +1335,12 @@
     function hideAllToolsPanels() {
       const adminBox = document.getElementById('adminBar');
       const liveBox  = document.getElementById('liveAssistantBox');
+      const akrBox   = document.getElementById('akronimBox');
 
       // Sembunyikan keduanya (tidak reset nilai/input apapun)
       if (adminBox) adminBox.classList.add('hidden');
       if (liveBox)  liveBox.classList.add('hidden');
+      if (akrBox) akrBox.classList.add('hidden');
 
       // HP: sembunyikan host mobile kalau ada
       const host = document.getElementById('toolsMobileHost');
@@ -1363,6 +1440,264 @@
     //   hideAllToolsPanels();
     // });
 
+    function setAkronimHeights(){
+      const box = document.getElementById('akronimBox');
+      const sc  = document.getElementById('akronimScroll');
+      if (!box || !sc) return;
+
+      if (isMobile()){
+        // Mobile: tinggi disesuaikan dengan isi akronim saja
+        // scroll hanya muncul jika isi lebih tinggi dari viewport
+        sc.style.height = 'auto';
+        sc.style.maxHeight = (window.innerHeight * 0.5) + 'px'; // batas maksimal 50% layar
+      } else {
+        // Desktop: biarkan flex mengatur penuh kolom aside; sc mengisi penuh & scroll
+        sc.style.height = '';
+        sc.style.maxHeight = '';
+        sc.style.flex = '1 1 auto';
+      }
+    }
+
+
+    // panggil ketika orientasi/resize agar responsif
+    window.addEventListener('resize', () => {
+      // hanya update jika panel akronim sedang terbuka
+      if (!document.getElementById('akronimBox')?.classList.contains('hidden')){
+        setAkronimHeights();
+        const scroller = document.getElementById('akronimScroll') || document.getElementById('akronimBox');
+        attachScrollline?.(scroller, scroller);
+        refreshScrolllines?.();
+      }
+    });
+
+
+    // ===== Akronim state
+    async function fetchAkronim(){
+      const res = await fetch('/akronim');
+      if (!res.ok) throw new Error('Gagal memuat akronim');
+
+      AKRONIM = await res.json();
+
+      // Urutkan berdasarkan title (nama) secara alfabet
+      AKRONIM.sort((a, b) => {
+        if (!a.title) return 1;
+        if (!b.title) return -1;
+        return a.title.localeCompare(b.title, 'id', { sensitivity: 'base' });
+      });
+
+      AKRONIM_FILTERED = AKRONIM.slice();
+      renderAkronim(AKRONIM_FILTERED);
+    }
+
+    let AKRONIM = [];            // cache
+    let AKRONIM_FILTERED = [];   // hasil filter akronim
+
+    function renderAkronim(list){
+      const tbody = document.getElementById('akronimList');
+      const pagWrap = document.getElementById('akrPaginationWrap');
+      const isMobile = window.matchMedia('(max-width: 640px)').matches;
+
+      tbody.innerHTML = '';
+      if (pagWrap) pagWrap.innerHTML = '';
+
+      if (!list.length){
+        tbody.innerHTML = `<tr><td colspan="4" class="py-3 text-gray-500">Belum ada data akronim.</td></tr>`;
+        // refresh tinggi & scrollline agar konsisten
+        setAkronimHeights?.();
+        refreshScrolllines?.();
+        return;
+      }
+
+      if (isMobile){
+        // === MOBILE: pakai pagination agar list pendek
+        const { page, totalPages, slice } = paginateMobile(list, akrCurrentPage, PAGE_SIZE_MOBILE_AKR);
+        akrCurrentPage = page; // clamp
+
+        slice.forEach(r => {
+          const tr = document.createElement('tr');
+          tr.className = 'border-t';
+          tr.innerHTML = `
+            <td class="py-2 pr-2 font-semibold text-gray-800">${r.title || ''}</td>
+            <td class="py-2 pr-2 text-gray-700">${r.content || ''}</td>
+            <td class="py-2 pr-2">
+              ${r.link_url ? `<a class="text-blue-600 hover:underline" target="_blank" href="${r.link_url}">Buka</a>` : ''}
+            </td>
+            <td class="py-2 text-right">
+              ${isAdmin()
+                ? `<button class="text-xs rounded-full border px-2 py-0.5 hover:bg-gray-50" data-akr-id="${r.id}" data-akr-act="del">Hapus</button>`
+                : ''
+              }
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        renderAkrPaginationMobile(totalPages);
+      } else {
+        // === DESKTOP/TABLET: tampilkan semua; scroll di dalam #akronimScroll
+        list.forEach(r => {
+          const tr = document.createElement('tr');
+          tr.className = 'border-t';
+          tr.innerHTML = `
+            <td class="py-2 pr-2 font-semibold text-gray-800">${r.title || ''}</td>
+            <td class="py-2 pr-2 text-gray-700">${r.content || ''}</td>
+            <td class="py-2 pr-2">
+              ${r.link_url ? `<a class="text-blue-600 hover:underline" target="_blank" href="${r.link_url}">Buka</a>` : ''}
+            </td>
+            <td class="py-2 text-right">
+              ${isAdmin()
+                ? `<button class="text-xs rounded-full border px-2 py-0.5 hover:bg-gray-50" data-akr-id="${r.id}" data-akr-act="del">Hapus</button>`
+                : ''
+              }
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+        if (pagWrap) pagWrap.classList.add('hidden'); // jaga2
+      }
+
+      // konsistensi tinggi & scrollline panel Akronim
+      setAkronimHeights?.();
+      const scroller = document.getElementById('akronimScroll') || document.getElementById('akronimBox');
+      attachScrollline?.(scroller, scroller);
+      refreshScrolllines?.();
+    }
+
+    function renderAkrPaginationMobile(totalPages){
+      const wrap = document.getElementById('akrPaginationWrap');
+      if (!wrap) return;
+
+      wrap.innerHTML = '';
+      wrap.classList.remove('hidden');
+
+      if (totalPages <= 1){ wrap.classList.add('hidden'); return; }
+
+      const btn = (label, page, {active=false, disabled=false}={}) => {
+        const b = document.createElement('button');
+        b.textContent = label;
+        b.className = "px-3 py-1 rounded-lg border text-sm " +
+                      (active ? "bg-sky-600 text-white border-sky-600" : "hover:bg-gray-50") +
+                      (disabled ? " opacity-40 cursor-not-allowed" : "");
+        if (!disabled) b.addEventListener('click', () => {
+          akrCurrentPage = page;
+          renderAkronim(AKRONIM_FILTERED ?? AKRONIM);
+        });
+        wrap.appendChild(b);
+      };
+
+      // Prev
+      btn('‹', Math.max(1, akrCurrentPage-1), {disabled: akrCurrentPage===1});
+
+      // Ringkas: 1 … p-1 p p+1 … last (ala compact)
+      if (totalPages <= 7){
+        for (let i=1;i<=totalPages;i++) btn(String(i), i, {active: i===akrCurrentPage});
+      } else {
+        btn('1', 1, {active: akrCurrentPage===1});
+        if (akrCurrentPage > 3) addDots(wrap);
+
+        const start = Math.max(2, akrCurrentPage - 1);
+        const end   = Math.min(totalPages - 1, akrCurrentPage + 1);
+        for (let p = start; p <= end; p++) btn(String(p), p, {active: p===akrCurrentPage});
+
+        if (akrCurrentPage < totalPages - 2) addDots(wrap);
+        btn(String(totalPages), totalPages, {active: akrCurrentPage===totalPages});
+      }
+
+      // Next
+      btn('›', Math.min(totalPages, akrCurrentPage+1), {disabled: akrCurrentPage===totalPages});
+
+      function addDots(w){
+        const s = document.createElement('span');
+        s.textContent = '…';
+        s.className = 'px-2 text-gray-500';
+        w.appendChild(s);
+      }
+    }
+
+    async function toggleAkronim(){
+      const adminBox = document.getElementById('adminBar');
+      const liveBox  = document.getElementById('liveAssistantBox');
+      const akrBox   = document.getElementById('akronimBox');
+
+      // tutup hamburger highlight
+      document.getElementById('toggleAsideBtn')?.setAttribute('aria-expanded','false');
+      document.body.classList.remove('tools-open');
+
+      const willOpen = akrBox.classList.contains('hidden');
+
+      if (willOpen) {
+        // buka Akronim, tutup yang lain
+        akrBox.classList.remove('hidden');
+        if (adminBox && !adminBox.classList.contains('hidden')) adminBox.classList.add('hidden');
+        if (liveBox  && !liveBox.classList.contains('hidden'))  liveBox.classList.add('hidden');
+
+        if (isMobile()) {
+          mountToolPanel?.(akrBox);
+          mountToolPanel?.(adminBox);
+          mountToolPanel?.(liveBox);
+        } else {
+          moveSearchToTopForTools?.();
+          ensureAsideVisible?.();
+          mountToolPanel?.(akrBox);
+        }
+
+        try {
+          if (!AKRONIM || AKRONIM.length === 0) await fetchAkronim();
+        } catch (err){
+          console.error(err);
+          const tbody = document.getElementById('akronimList');
+          if (tbody){
+            tbody.innerHTML = `<tr><td colspan="4" class="py-3 text-rose-600">Gagal memuat. Coba muat ulang.</td></tr>`;
+          }
+        }
+      } else {
+        akrBox.classList.add('hidden');
+      }
+
+      const adminOpen = adminBox && !adminBox.classList.contains('hidden');
+      const liveOpen  = liveBox  && !liveBox.classList.contains('hidden');
+      const akrOpen   = !akrBox.classList.contains('hidden');
+
+      setToolsIndicator({
+        adminOpen: adminOpen,
+        akronimOpen: akrOpen,
+        liveOpen : liveOpen
+      });
+
+      closeAsideIfEmpty();
+      applyAsideLayout?.();
+      attachScrollline?.(akrBox, akrBox);
+      refreshScrolllines?.();
+      setPanelHeights?.();
+      restoreSearchPositionIfNeeded?.();
+      updateSearchPosition?.();
+    }
+
+
+
+    document.getElementById('akrFilter')?.addEventListener('input', (e)=>{
+      const q = (e.target.value || '').toLowerCase().trim();
+      AKRONIM_FILTERED = !q ? AKRONIM.slice()
+        : AKRONIM.filter(x => [x.title, x.content].some(t => t?.toLowerCase().includes(q)));
+      akrCurrentPage = 1;                // ⬅️ reset ke halaman 1
+      renderAkronim(AKRONIM_FILTERED);
+    });
+
+    document.getElementById('akrReloadBtn')?.addEventListener('click', ()=>{
+      akrCurrentPage = 1;                // ⬅️ reset ke halaman 1
+      fetchAkronim().catch(()=>{});
+    });
+
+    function ensureAkrValidPage(){
+      const totalPages = Math.max(1, Math.ceil((AKRONIM_FILTERED?.length || AKRONIM.length) / PAGE_SIZE_MOBILE_AKR));
+      if (akrCurrentPage > totalPages) akrCurrentPage = totalPages;
+    }
+
+
+
+
+
+
 
     // ===== Mobile tools host (menaruh Admin/Live di bawah search saat HP) =====
     function getMobileToolsHost() {
@@ -1400,7 +1735,7 @@
     // Sinkron mounting & posisi host saat resize/orientasi
     function syncToolsMount(){
       const host = getMobileToolsHost(); // ini juga menjamin posisi host sesudah topActions
-      ['adminBar','liveAssistantBox'].forEach(id=>{
+      ['adminBar','liveAssistantBox','akronimBox'].forEach(id=>{
         const el = document.getElementById(id);
         if (el) mountToolPanel(el);
       });
@@ -1419,80 +1754,111 @@
     function toggleAdminBar(force) {
       const adminBox = document.getElementById('adminBar');
       const liveBox  = document.getElementById('liveAssistantBox');
+      const akrBox   = document.getElementById('akronimBox');
 
+      const btnAdmin = document.getElementById('btnAdminToggle');
+
+      // tutup highlight hamburger
+      document.getElementById('toggleAsideBtn')?.setAttribute('aria-expanded','false');
+      document.body.classList.remove('tools-open');
+
+      // akan dibuka?
       const willOpen = (typeof force === 'boolean')
         ? force
         : adminBox.classList.contains('hidden');
 
       if (willOpen) {
+        // buka Admin
         adminBox.classList.remove('hidden');
-        if (liveBox && !liveBox.classList.contains('hidden')) liveBox.classList.add('hidden');
 
+        // tutup yang lain
+        if (liveBox && !liveBox.classList.contains('hidden')) liveBox.classList.add('hidden');
+        if (akrBox  && !akrBox.classList.contains('hidden')) akrBox.classList.add('hidden');
+
+        // mount & layout
         if (isMobile()) {
-          mountToolPanel(adminBox);
-          mountToolPanel(liveBox);   // pastikan dua-duanya berada di host yg sama
-          // ❌ JANGAN hide topActions di HP
+          mountToolPanel?.(adminBox);
+          mountToolPanel?.(liveBox);
+          mountToolPanel?.(akrBox);
+          // topActions di HP biarkan tetap tampil
         } else {
           moveSearchToTopForTools?.();
-          ensureAsideVisible();      // buka aside di desktop
-          mountToolPanel(adminBox);
+          ensureAsideVisible?.();
+          mountToolPanel?.(adminBox);
         }
       } else {
+        // tutup Admin
         adminBox.classList.add('hidden');
       }
 
-      // indikator eksklusif
+      // indikator tombol (konsisten)
       setToolsIndicator({
-        adminOpen: !adminBox.classList.contains('hidden'),
-        liveOpen : !liveBox.classList.contains('hidden')
+        adminOpen   : !adminBox.classList.contains('hidden'),
+        akronimOpen : akrBox ? !akrBox.classList.contains('hidden') : false,
+        liveOpen    : liveBox ? !liveBox.classList.contains('hidden') : false
       });
 
-      closeAsideIfEmpty();
+      closeAsideIfEmpty?.();
       applyAsideLayout?.();
       attachScrollline?.(adminBox, adminBox);
       refreshScrolllines?.();
       setPanelHeights?.();
       restoreSearchPositionIfNeeded?.();
-      updateSearchPosition();
+      updateSearchPosition?.();
     }
+
 
 
     function toggleLiveAssistant() {
       const adminBox = document.getElementById('adminBar');
       const liveBox  = document.getElementById('liveAssistantBox');
+      const akrBox   = document.getElementById('akronimBox');
+
+      // tutup highlight hamburger
+      document.getElementById('toggleAsideBtn')?.setAttribute('aria-expanded','false');
+      document.body.classList.remove('tools-open');
 
       const willOpen = liveBox.classList.contains('hidden');
 
       if (willOpen) {
+        // buka Live
         liveBox.classList.remove('hidden');
-        if (adminBox && !adminBox.classList.contains('hidden')) adminBox.classList.add('hidden');
 
+        // tutup yang lain
+        if (adminBox && !adminBox.classList.contains('hidden')) adminBox.classList.add('hidden');
+        if (akrBox  && !akrBox.classList.contains('hidden')) akrBox.classList.add('hidden');
+
+        // mount & layout
         if (isMobile()) {
-          mountToolPanel(liveBox);
-          mountToolPanel(adminBox);
-          // ❌ JANGAN hide topActions di HP
+          mountToolPanel?.(liveBox);
+          mountToolPanel?.(adminBox);
+          mountToolPanel?.(akrBox);
         } else {
           moveSearchToTopForTools?.();
-          ensureAsideVisible();
-          mountToolPanel(liveBox);
+          ensureAsideVisible?.();
+          mountToolPanel?.(liveBox);
         }
       } else {
+        // tutup Live
         liveBox.classList.add('hidden');
       }
 
+      // indikator tombol (konsisten)
       setToolsIndicator({
-        adminOpen: !adminBox.classList.contains('hidden'),
-        liveOpen : !liveBox.classList.contains('hidden')
+        adminOpen   : adminBox ? !adminBox.classList.contains('hidden') : false,
+        akronimOpen : akrBox ? !akrBox.classList.contains('hidden') : false,
+        liveOpen    : !liveBox.classList.contains('hidden')
       });
 
-      closeAsideIfEmpty();
+      closeAsideIfEmpty?.();
       applyAsideLayout?.();
       attachScrollline?.(liveBox, liveBox);
       refreshScrolllines?.();
       setPanelHeights?.();
       restoreSearchPositionIfNeeded?.();
-      updateSearchPosition();
+      updateSearchPosition?.();
     }
+
 
 
 
@@ -1698,6 +2064,48 @@
       const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
       window.location.href = mailtoLink;
     }
+
+    // tambah
+    document.getElementById('akrAddBtn')?.addEventListener('click', async ()=>{
+      const title = (document.getElementById('akrTitle').value || '').trim();
+      const content = (document.getElementById('akrContent').value || '').trim();
+      const link_url = (document.getElementById('akrUrlLink').value || '').trim();
+      if (!title || !content) return alert('Isi singkatan & penjelasan');
+
+      try {
+        const res = await fetch('/akronim', {
+          method: 'POST',
+          headers: headersJSON(),
+          body: JSON.stringify({ title, content, link_url })
+        });
+        if (!res.ok) throw new Error((await res.json()).error || 'Gagal menambah akronim');
+        // reset
+        document.getElementById('akrTitle').value = '';
+        document.getElementById('akrContent').value = '';
+        document.getElementById('akrUrlLink').value = '';
+        await fetchAkronim();
+        // auto tampilkan panel Akronim biar terlihat hasilnya
+        const boxAkr  = document.getElementById('akronimBox');
+        const btnAkr  = document.getElementById('btnAkronimToggle');
+        if (boxAkr.classList.contains('hidden')) { boxAkr.classList.remove('hidden'); btnAkr?.classList.add('text-sky-700'); }
+      } catch (e){ alert(e.message); }
+    });
+
+    // hapus (delegation di tbody)
+    document.getElementById('akronimList')?.addEventListener('click', async (e)=>{
+      const btn = e.target.closest('button[data-akr-id][data-akr-act="del"]');
+      if (!btn) return;
+      const id = btn.getAttribute('data-akr-id');
+      if (!confirm('Hapus akronim ini?')) return;
+      try {
+        const res = await fetch(`/akronim/${id}`, { method:'DELETE', headers: headersJSON() });
+        if (!res.ok) throw new Error((await res.json()).error || 'Gagal menghapus');
+        await fetchAkronim();
+      } catch (err){ alert(err.message); }
+
+      ensureAkrValidPage(); renderAkronim(AKRONIM_FILTERED);
+    });
+
 
 
     // ===== Salin tautan detail =====
