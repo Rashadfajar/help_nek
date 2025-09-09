@@ -4,13 +4,23 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
+    "dev:css": "tailwindcss -i ./src/input.css -o ./public/assets/tw.css --watch",
+    "build:css": "tailwindcss -i ./src/input.css -o ./public/assets/tw.css --minify",
+    "dev:server": "nodemon server.js",
     "start": "node server.js",
-    "dev": "npx nodemon server.js"
+    "dev": "npm run dev:server"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "mysql2": "^3.14.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.13",
+    "@tailwindcss/postcss": "^4.1.13",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.13"
   }
 }

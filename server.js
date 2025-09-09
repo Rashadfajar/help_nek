@@ -20,6 +20,13 @@ app.use((req, _res, next) => {
 // static files
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.use((_, res, next) => {
+  res.setHeader("Content-Security-Policy",
+    "default-src 'self'; script-src 'self' https://cdn.tailwindcss.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:");
+  next();
+});
+
+
 // --- ENV mapping (baca dari DB_* atau MYSQL* milik Railway) ---
 const DB_HOST = process.env.DB_HOST || process.env.MYSQLHOST;
 const DB_USER = process.env.DB_USER || process.env.MYSQLUSER;
@@ -64,6 +71,21 @@ app.get('/health', async (_req, res) => {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
+
+async function ensureTables() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS documents (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      title      VARCHAR(255) NOT NULL,
+      file_type  VARCHAR(20)  DEFAULT NULL,
+      url        TEXT         NOT NULL,
+      sort_order INT          NOT NULL DEFAULT 0,
+      bg         TEXT         DEFAULT NULL,
+      KEY (sort_order)
+    )
+  `);
+}
+
 
 // ====== PUBLIC READ ======
 app.get('/faq', async (_req, res) => {
@@ -217,24 +239,15 @@ app.put('/akronim/:id', checkAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { title, content, link_url } = req.body || {};
-    if (!title || !content) return res.status(400).json({ error: 'title & content required' });
-
-    const [r] = await pool.execute(
-      'UPDATE akronim SET title=?, content=?, link_url=?, updated_at=CURRENT_TIMESTAMP WHERE id=?',
-      [title, content, link_url || null, id]
-    );
-    if (r.affectedRows === 0) return res.status(404).json({ error: 'Not found' });
-
-    const [rows] = await pool.query(
-      'SELECT id, title, content, link_url FROM akronim WHERE id=?',
-      [id]
-    );
-    res.json(rows[0]);
+    if (!title || !content) return res.status(400).json({ error: 'title & content wajib' });
+    const [r] = await pool.execute('UPDATE akronim SET title=?, content=? , link_url=? WHERE id=?', [title, content, link_url || null, id]);
+    if (r.affectedRows === 0) return res.status(404).json({ error: 'Istilah tidak ditemukan' });
+    res.json({ id: Number(id), title, content, link_url: link_url || null});;
   } catch (e) {
     console.error('Akronim PUT error:', e);
     res.status(500).json({ error: 'Gagal memperbarui akronim' });
   }
-});
+})
 
 app.delete('/akronim/:id', checkAdmin, async (req, res) => {
   try {
@@ -248,11 +261,81 @@ app.delete('/akronim/:id', checkAdmin, async (req, res) => {
   }
 });
 
+// ====== PUBLIC READ: Documents ======
+app.get('/docs', async (_req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT id, title, file_type AS type, url, sort_order, bg
+       FROM documents
+       ORDER BY sort_order ASC, id DESC`
+    );
+    res.json(rows);
+  } catch (e) {
+    console.error('Docs error:', e);
+    res.status(500).json({ error: 'Gagal mengambil daftar dokumen' });
+  }
+});
 
+// ====== ADMIN CRUD: Documents ======
+app.post('/docs', checkAdmin, async (req, res) => {
+  try {
+    const { title, url, type = null, sort_order = 0 , bg} = req.body || {};
+    if (!title || !url) return res.status(400).json({ error: 'title & url wajib' });
+    const [r] = await pool.execute(
+      `INSERT INTO documents (title, file_type, url, sort_order, bg) VALUES (?,?,?,?,?)`,
+      [title, type, url, Number(sort_order) || 0, bg]
+    );
+    res.status(201).json({ id: r.insertId, title, type, url, sort_order: Number(sort_order)||0, bg });
+  } catch (e) {
+    console.error('Docs POST error:', e);
+    res.status(500).json({ error: 'Gagal menambah dokumen' });
+  }
+});
+
+app.put('/docs/:id', checkAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, url, type = null, sort_order = 0 , bg} = req.body || {};
+    if (!title || !url) return res.status(400).json({ error: 'title & url wajib' });
+    const [r] = await pool.execute(
+      `UPDATE documents SET title=?, file_type=?, url=?, sort_order=?, bg=? WHERE id=?`,
+      [title, type, url, Number(sort_order)||0, bg, id]
+    );
+    if (r.affectedRows === 0) return res.status(404).json({ error: 'Dokumen tidak ditemukan' });
+    res.json({ id: Number(id), title, type, url, sort_order: Number(sort_order)||0, bg });
+  } catch (e) {
+    console.error('Docs PUT error:', e);
+    res.status(500).json({ error: 'Gagal memperbarui dokumen' });
+  }
+});
+
+app.delete('/docs/:id', checkAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [r] = await pool.execute(`DELETE FROM documents WHERE id=?`, [id]);
+    if (r.affectedRows === 0) return res.status(404).json({ error: 'Dokumen tidak ditemukan' });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('Docs DELETE error:', e);
+    res.status(500).json({ error: 'Gagal menghapus dokumen' });
+  }
+});
 
 // --- START SERVER (satu kali saja) ---
-app.listen(PORT, () => {
-  console.log(`Server berjalan di :${PORT}`);
-  console.log(`Admin key (header x-admin-key): ${ADMIN_KEY ? '[set]' : '[default]'}`);
-});
+if (require.main === module) {
+  (async () => {
+    try {
+      await ensureTables();
+      app.listen(PORT, () => {
+        console.log(`Server berjalan di :${PORT}`);
+        console.log(
+          `Admin key (header x-admin-key): ${ADMIN_KEY ? '[set]' : '[default]'}`
+        );
+      });
+    } catch (err) {
+      console.error('Boot error:', err);
+      process.exit(1);
+    }
+  })();
+}
 

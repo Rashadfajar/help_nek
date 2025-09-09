@@ -4,12 +4,26 @@
   <meta charset="UTF-8" />
   <title>Pusat Bantuan Penyelenggaraan NEK Provinsi DKI Jakarta</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- config dulu -->
+  <script>
+    // aman: tidak error walau tailwind belum ada
+    window.tailwind = window.tailwind || {};
+    window.tailwind.config = {
+      corePlugins: { preflight: false },  // pilihanmu tadi
+      darkMode: 'class'                   // opsional
+    };
+  </script>
+
+  <!-- lalu CDN (tanpa forms) -->
+  <script src="https://cdn.tailwindcss.com?plugins=typography,aspect-ratio"></script>
+
   <style>
+    *,*::before,*::after { box-sizing: border-box }
+    img,video { max-width:100%; height:auto; display:block }
     /* ===========================
       Root & Footer
     ============================ */
-    :root { --footer-h: 56px; }          /* tinggi footer (desktop/tablet) */
+    :root { --footer-h: 36px; } 
     footer { height: var(--footer-h); }
 
     /* ===========================
@@ -33,7 +47,7 @@
       padding-top: .5rem;
     }
 
-    /* Right Aside: hormati .hidden agar benar2 tidak makan tinggi */
+    /* Right Aside */
     #rightAside { min-height: 0; padding-top: .5rem; overflow: hidden; }
     #rightAside.hidden { display: none !important; }
     #rightAside:not(.hidden) { display: flex; flex-direction: column; }
@@ -111,9 +125,10 @@
       min-height: 58vh;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       padding-top: 8rem;
+      padding-left: 4rem;
       transition: min-height .35s ease, margin .35s ease, padding .35s ease, transform .35s ease;
     }
-    .hero.hero--collapsed{ min-height: auto; padding: .75rem 0 0; }
+    .hero.hero--collapsed{ min-height: auto; padding: .75rem 0 0 4rem; }
 
     /* ===========================
       Misc
@@ -165,6 +180,117 @@
     /* jaga agar newline tampil sebagai baris baru */
     #detailBody { white-space: pre-line; }
 
+    :root{
+      --doc-rail-w: 100px;
+      --doc-rail-gap: 4px;
+      --doc-nav-d: 40px;  
+      --doc-card-h: 150px;
+    }
+
+    #docRail{
+      position: fixed; top:12px; bottom:12px; right:12px;
+      width:var(--doc-rail-w); display:none; z-index:60;
+    }
+    body.with-doc-rail #docRail{ display:flex; flex-direction:column; }
+    body.with-doc-rail #appShell{
+      padding-right: calc(var(--doc-rail-w) + var(--doc-rail-gap));
+    }
+
+    /* bingkai rail: tidak scroll; beri ruang untuk tombol */
+    #docRail .rail{
+      position:relative; flex:1 1 auto; overflow:hidden;
+      padding-top: calc(var(--doc-nav-d) + 6px);
+      padding-bottom: calc(var(--doc-nav-d) + 6px);
+    }
+
+    /* elemen yang di-scroll via JS (scrollbar disembunyikan) */
+    #docRailInner{
+      height:100%;
+      overflow:auto; overscroll-behavior:contain;
+      -ms-overflow-style:none; scrollbar-width:none;     /* Firefox/IE */
+      display:flex; flex-direction:column;               /* ⬅ pusatkan pakai flex */
+    }
+    #docRailInner::-webkit-scrollbar{ width:0; height:0; } /* Chrome/Safari */
+
+    /* ketika item sedikit → pusatkan vertikal */
+    #docRail .rail.center #docRailInner{ justify-content:center; }
+
+    #docRail .list{ display:flex; flex-direction:column; gap:10px; }
+
+    .docCard{
+      position:relative;
+      display:block;
+      height:var(--doc-card-h);
+      background:#111;               /* fallback */
+      background-size:cover;
+      background-position:center;
+      border-radius:14px;
+      border:1px solid #e5e7eb;
+      box-shadow:0 6px 18px rgba(0,0,0,.08);
+      overflow:hidden;
+      text-decoration:none;
+    }
+    /* .docCard .t{ font-weight:700; font-size:12px; line-height:1.2; color:#1e40af;
+      display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; line-clamp: 3;}
+    .docCard .b{ margin-top:4px; font-size:11px; color:#6b7280; } */
+
+    /* Overlay halus agar judul nanti kebaca */
+    .docCard::before{
+      content:"";
+      position:absolute; inset:0;
+      /* background:linear-gradient(to bottom, rgba(0,0,0,.08), rgba(0,0,0,.16)); */
+      pointer-events:none;
+      transition:opacity .2s ease;
+    }
+
+    /* Label judul: hidden by default, muncul saat hover/focus/tap */
+    .docCard .label{
+      position:absolute; left:8px; right:8px; bottom:8px;
+      padding:8px 10px;
+      border-radius:10px;
+      background:rgba(0,0,0,.55);
+      color:#fff;
+      font-weight:700; font-size:12px; line-height:1.25;
+      opacity:0; transform:translateY(6px);
+      transition:opacity .2s ease, transform .2s ease;
+      pointer-events:none;  /* jangan ganggu klik kartu */
+    }
+
+    /* Hover/focus: tampilkan judul */
+    .docCard:hover .label,
+    .docCard:focus-visible .label,
+    .docCard.is-revealed .label{      /* dipakai utk mobile tap */
+      opacity:1; transform:translateY(0);
+    }
+
+    /* Perjelas overlay saat hover agar kontras */
+    .docCard:hover::before,
+    .docCard:focus-visible::before,
+    .docCard.is-revealed::before{
+      opacity:.95;
+      background:linear-gradient(to bottom, rgba(0,0,0,.10), rgba(0,0,0,.28));
+    }
+
+    /* Tombol hapus tetap terlihat */
+    .docCard .docDel{
+      position:absolute; right:6px; top:6px; z-index:2;
+      background:rgba(255,255,255,.9);
+      border:1px solid #e5e7eb;
+      border-radius:9999px; padding:2px 8px; font-size:12px;
+    }
+
+    /* tombol depan */
+    #docUp,#docDown{
+      position:absolute; left:50%; transform:translateX(-50%);
+      width:var(--doc-nav-d); height:var(--doc-nav-d);
+      display:grid; place-items:center;
+      background:rgba(255,255,255,.95);
+      border:2px solid #3b82f6; border-radius:9999px;
+      box-shadow:0 6px 16px rgba(0,0,0,.15); cursor:pointer; z-index:4;
+    }
+    #docUp{ top:0; } #docDown{ bottom:0; }
+    #docRail .nav[disabled]{ opacity:.35; pointer-events:none; }
+
 
     /* ===========================
       Tablet+ : kembalikan animasi lebar form
@@ -175,10 +301,10 @@
     }
 
     /* =================================================================
-      MOBILE (≤640px): halaman bebas scroll, tools jadi baris bawah search
+      MOBILE (≤640px)
       ================================================================= */
     @media (max-width: 640px){
-      :root { --footer-h: 64px; }
+      :root { --footer-h: 35px; }
 
       /* Halaman boleh scroll (bukan fixed 1 layar) */
       html, body { height: auto; min-height: 100%; overflow: auto; }
@@ -199,8 +325,8 @@
       .scrollline { display: none !important; }
 
       /* HERO lebih pendek */
-      .hero { min-height: 34vh; padding-top: 2rem; }
-      .hero.hero--collapsed { min-height: auto; padding-top: .5rem; }
+      .hero { min-height: 34vh; padding-top: 2rem; padding-left: 0; }
+      .hero.hero--collapsed { min-height: auto; padding-top: .5rem; padding-left: 0; }
 
       /* Search full width, tombol menu di kanan, tools di baris bawah */
       #searchRow {
@@ -226,7 +352,8 @@
         order: 2;
         margin-top: .25rem;
         display: none; gap: .5rem; justify-content: flex-start;
-        background: transparent; border: 0; padding: 0; box-shadow: none;
+        background: transparent; border: 0; box-shadow: none;
+        padding-left: 2rem;
       }
       #topActions:not(.hidden) { display: flex; }
       #topActions .rounded-2xl {
@@ -242,13 +369,8 @@
       }
       #toolsMobileHost > #adminBar,
       #toolsMobileHost > #liveAssistantBox{
-        border-radius: .75rem;
-        border: 1px solid #e5e7eb;
-        padding: .75rem;
-        background: #fff;
-        box-shadow:
-          0 14px 28px rgba(0,0,0,.12),
-          0 10px 10px rgba(0,0,0,.06);
+        margin-left: .4rem;
+        margin-right: .4rem;
       }
 
       /* Kartu lebih kompak */
@@ -282,8 +404,50 @@
         max-height:none !important;
         overflow:visible !important;
       }
+      body.with-doc-rail #appShell{ padding-right:0; }
+      #docRail{
+        position:static; width:auto; height:auto;
+        margin:.5rem .75rem 0;
+      }
+      /* Sembunyikan tombol panah */
+      #docRail .nav{ display:none !important; }
+      /* Frame rail rapat */
+      #docRail .rail{
+        padding:0; overflow:hidden;
+        background:transparent; box-shadow:none; border:0;
+      }
+      /* Scroll horizontal yang halus (iOS friendly) + snap */
+      #docRailInner{
+        height:auto;
+        display:flex; flex-direction:row;
+        overflow-x:auto; overflow-y:hidden;
+        -webkit-overflow-scrolling:touch;
+        scroll-snap-type:x mandatory;
+        gap:10px;          /* jarak antar kartu */
+        padding-bottom:6px;
+      }
+      #docRailInner::-webkit-scrollbar{ height:6px; }
+      /* Daftar jadi baris */
+      #docRail .rail.center #docRailInner{ justify-content:center; }
+      #docRail .list{ flex-direction:row; gap:10px; }
+      /* Kartu: melebar vertikal (feel portrait), snap di awal */
+      .docCard{
+        min-width: 44vw;        /* lebar relatif layar */
+        max-width: 360px;       /* jaga agar tak terlalu lebar di tablet kecil */
+        height:    22vw;        /* lebih tinggi → terasa vertikal */
+        max-height: 420px;      /* pagar atas */
+        scroll-snap-align:start;
+        border-radius:16px;
+      }
+      /* Label judul saat hover/tap: sedikit lebih besar di hp */
+      .docCard .label{
+        left:10px; right:10px; bottom:10px;
+        padding:10px 12px;
+        border-radius:12px;
+        font-size:13px; line-height:1.3;
+      }
     }
-    /* bantu wrapping judul agar rapi di layar sempit */
+
     @supports (text-wrap: balance){
       #logoTitle h1, #logoTitle p { text-wrap: balance; }
     }
@@ -291,10 +455,21 @@
   </style>
 </head>
 <body class="bg-custom text-gray-800 font-sans md:h-screen md:overflow-hidden">
+  <!-- ===== RIGHT DOC RAIL (permanent) ===== -->
+  <aside id="docRail" aria-label="Dokumen">
+    <button id="docUp"   class="nav" aria-label="Gulung ke atas">▲</button>
+    <div id="docRailScroll" class="rail">
+      <div id="docRailInner">
+        <div id="docRailList" class="list"></div>
+      </div>
+    </div>
+    <button id="docDown" class="nav" aria-label="Gulung ke bawah">▼</button>
+  </aside>
+
   <div id="appShell" class="max-w-6xl mx-auto h-full flex flex-col px-4 md:px-6 pt-4 pb-2">
     <!-- HERO WRAP -->
     <section id="heroWrap" class="hero">
-      <div class="max-w-6xl mx-auto px-1.5 md:px-6 py-4 md:py-4">
+      <div class="max-w-6xl mx-auto px-1.5 md:pr-2 pl-4 pr-4 py-4 md:py-4">
         <!-- Header -->
         <div id="logoTitle" class="mb-6">
           <div class="mx-auto w-full max-w-3xl">
@@ -362,10 +537,10 @@
               </div>
             </button>
             <div id="topActions" class=" hidden flex gap-2">
-              <button id="btnAkronimToggle" onclick="toggleAkronim()"
+              <!-- <button id="btnAkronimToggle" onclick="toggleAkronim()"
                 class="rounded-2xl border bg-white px-4 shadow-sm text-sm font-semibold text-blue-700 hover:text-green-700">
                 Akronim
-              </button>
+              </button> -->
 
               <button id="btnAdminToggle" onclick="toggleAdminBar()"
                 class="rounded-2xl border bg-white px-4 shadow-sm text-sm font-semibold text-blue-700 hover:text-green-700"
@@ -383,7 +558,7 @@
     </section>
 
     <!-- Grid Utama -->
-    <main id="mainGrid" class="flex-1 min-h-0 overflow-hidden grid grid-cols-1 md:grid-cols-12 auto-rows-fr gap-4 pt-2 pb-0 px-4 md:px-10">
+    <main id="mainGrid" class="flex-1 min-h-0 overflow-hidden grid grid-cols-1 md:grid-cols-12 auto-rows-fr gap-4 pt-2 pb-0 px-4 md:pl-10 pr-2">
       <!-- Kiri -->
      <section id="leftCol"   class="order-2 md:order-1 md:col-span-3 min-h-0 h-full overflow-hidden">
         <div id="resultsWrap" class="hidden h-full flex flex-col rounded-3xl border-2 border-blue-500 bg-white p-2 shadow-sm card-tall">
@@ -444,11 +619,11 @@
       </section>
 
       <!-- Kanan: aside (hasil dari tombol topActions) -->
-      <aside id="rightAside" class="hidden order-1 md:order-3 md:col-span-4 min-h-0 h-full overflow-hidden space-y-2">
+      <aside id="rightAside" class="hidden order-1 md:order-3 md:col-span-4 min-h-0 h-full overflow-hidden">
 
         <!-- Admin Bar (tersembunyi di awal) -->
-        <div id="adminBar" class="hidden mb-8 p-4 bg-violet-50 border border-violet-200 rounded-xl max-h-full overflow-auto overscroll-contain hide-native-scroll">
-          <div class="flex flex-wrap items-center gap-3">
+        <div id="adminBar" class="hidden p-4 bg-violet-50 border-2 border-blue-500 rounded-3xl max-h-full overflow-auto overscroll-contain hide-native-scroll">
+          <div class="flex flex-wrap items-center">
             <div id="adminKeyRow" class="relative flex-1 min-w-[200px] max-w-full">
               <input id="adminKeyInput" type="password" placeholder="Masukkan Admin Key"
                 class="w-full p-2 pr-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
@@ -466,13 +641,13 @@
             
             <button id="adminLoginBtn" class="px-3 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700"> Login </button>
             <button id="adminLogoutBtn" class="px-3 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 hidden">Logout</button>
-            <span id="adminStatus" class="text-sm text-gray-700"></span>
+            <span id="adminStatus" class="pl-4 text-gray-700"></span>
           </div>
 
           <!-- Admin Forms -->
-          <div id="adminForms" class="hidden mt-4 grid gap-4">
+          <div id="adminForms" class="hidden mt-4 grid gap-2">
             <!-- Tambah FAQ -->
-            <div class="bg-white p-4 border rounded-xl shadow-sm w-full">
+            <div class="bg-white p-2 border rounded-2xl shadow-sm w-full">
               <h3 class="font-semibold mb-3 text-violet-700">Tambah FAQ</h3>
               <input id="faqTitle" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-violet-500" placeholder="Pertanyaan (title)"/>
               <textarea id="faqContent" rows="4" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-violet-500" placeholder="Jawaban (content)"></textarea>
@@ -482,7 +657,7 @@
               <button id="faqAddBtn" class="w-full px-3 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700">Tambah FAQ</button>
             </div>
             <!-- Tambah Glosarium -->
-            <div class="bg-white p-4 border rounded-xl shadow-sm w-full">
+            <div class="bg-white p-2 border rounded-2xl shadow-sm w-full">
               <h3 class="font-semibold mb-3 text-green-700">Tambah Glosarium</h3>
               <input id="gloTitle" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Istilah (title)"/>
               <textarea id="gloContent" rows="4" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Definisi (content)"></textarea>
@@ -492,7 +667,7 @@
               <button id="gloAddBtn" class="w-full px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Tambah Istilah</button>
             </div>
             <!-- Tambah Akronim -->
-            <div class="bg-white p-4 border rounded-xl shadow-sm w-full">
+            <div class="bg-white p-2 border rounded-2xl shadow-sm w-full">
               <h3 class="font-semibold mb-3 text-sky-700">Tambah Akronim</h3>
               <input id="akrTitle" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-sky-500"
                     placeholder="Singkatan (title), mis. MRV"/>
@@ -504,6 +679,32 @@
                 placeholder="URL Link (opsional)"/>
               <button id="akrAddBtn"
                 class="w-full px-3 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700">Tambah Akronim</button>
+            </div>
+            <!-- Tambah Dokumen -->
+            <div class="bg-white p-2 border rounded-xl shadow-sm w-full">
+              <h3 class="font-semibold mb-3 text-sky-700">Tambah Dokumen</h3>
+
+              <input id="docTitle" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    placeholder="Judul dokumen (mis. NAP Report Finalized)"/>
+
+              <input id="docUrl" type="url" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    placeholder="URL file (PDF/PPTX/Drive/Link)"/>
+
+              <div class="grid grid-cols-2 gap-2">
+                <select id="docType" class="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-sky-500">
+                  <option value="">(auto dari URL)</option>
+                  <option>PDF</option><option>PPTX</option><option>XLSX</option>
+                  <option>DOCX</option><option>LINK</option><option>OTHER</option>
+                </select>
+                <input id="docSort" type="number" class="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-sky-500"
+                      placeholder="Urutan (0=atas)" value="0"/>
+              </div>
+              <input id="docBg" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-sky-500 mt-2"
+                    placeholder="Background (warna/gradient/url gambar)"/>
+
+              <button id="docAddBtn" class="mt-3 w-full px-3 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700">
+                Tambah Dokumen
+              </button>
             </div>
           </div>
         </div>
@@ -532,7 +733,7 @@
         </div>
 
         <!-- Kotak Live Assistance -->
-        <div id="liveAssistantBox" class="hidden mt-4 rounded-2xl border bg-violet-50 p-5 shadow-sm max-h-full overflow-auto overscroll-contain hide-native-scroll">
+        <div id="liveAssistantBox" class="hidden rounded-3xl border-2 border-blue-500 bg-violet-50 p-5 shadow-sm max-h-full overflow-auto overscroll-contain hide-native-scroll">
           <h3 class="text-lg font-semibold">Live Assistance via Email</h3>
           <p class="mt-1 text-sm text-gray-600">Butuh bantuan? Kirim pertanyaan Anda melalui email.</p>
           <input id="assistantSubject" placeholder="Subjek email" class="mt-3 w-full rounded-xl border px-3 py-2 outline-none" />
@@ -540,17 +741,17 @@
           <button onclick="sendToEmail()" class="mt-3 w-full rounded-xl bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">Kirim via Email</button>
         </div>
       </aside>
-      <!-- Tailwind safelist (jangan dihapus) -->
+      <!-- Tailwind safelist -->
       <div class="hidden">
         <span class="md:col-span-8 md:col-span-4"></span>
       </div>
     </main>
 
     <!-- Footer -->
-    <footer class="fixed bottom-0 inset-x-0 pt-2 pb-5">
-      <p class="text-sm text-blue-700 text-center">Dibangun oleh 
-        <img src="assets/logo-dlh.png" alt="Logo DLH" class="inline h-8 w-8 mx-1" />
-        Dinas Lingkungan Hidup. didukung oleh Yayasan Generasi Hijau Indonesia</p>
+    <footer class="fixed bottom-0 inset-x-0 pt-2 pb-2">
+      <p class="text-sm text-blue-700 text-center">Powered by
+        <!-- <img src="assets/logo-dlh.png" alt="Logo DLH" class="inline h-8 w-8 mx-1" /> -->
+        Yayasan Generasi Hijau Indonesia</p>
     </footer>
   </div>
 
@@ -625,6 +826,7 @@
       // ✅ reset tampilan input password
       adminKeyInputEl.type = 'password';
       document.getElementById('eyeIcon')?.classList.remove('opacity-60');
+      window.location.reload();
     });
 
 
@@ -766,7 +968,190 @@
       setPanelHeights();
     }
 
+    // ====== State Docs (Doc Rail dari DB) ======
+    let DOCS = [];
 
+    // Auto deteksi tipe dari URL kalau type null
+    function inferTypeFromUrl(u=''){
+      const m = (u.split('?')[0]||'').toLowerCase().match(/\.(pdf|pptx?|xlsx?|docx?|zip|csv|jpg|jpeg|png)$/);
+      if (!m) return 'LINK';
+      const ext = m[1];
+      if (/^ppt/.test(ext)) return 'PPTX';
+      if (/^xls/.test(ext)) return 'XLSX';
+      if (/^doc/.test(ext)) return 'DOCX';
+      return ext.toUpperCase();
+    }
+
+    // GET /docs
+    async function fetchDocs(){
+      try{
+        const res = await fetch('/docs');
+        if(!res.ok) throw new Error('Gagal memuat dokumen');
+        DOCS = await res.json();
+        renderDocRail();
+      }catch(e){
+        console.error(e);
+        DOCS = [];
+        renderDocRail(); // tetap render kosong (supaya centering/logika jalan)
+      }
+    }
+
+    function buildBgStyle(bgRaw){
+      if (!bgRaw) return null;
+      const bg = bgRaw.trim();
+      if (/^https?:\/\//i.test(bg)) return { prop:'backgroundImage', value:`url('${bg}')` };
+      if (/^url\(/i.test(bg)) return { prop:'backgroundImage', value:bg };
+      if (/gradient\(/i.test(bg)) return { prop:'background', value:bg };
+      return { prop:'background', value:bg };
+    }
+
+
+    // Render Doc Rail (pakai struktur & CSS yang sudah kamu punya)
+    function renderDocRail(){
+      const list = document.getElementById('docRailList');
+      if (!list) return;
+      list.innerHTML = '';
+
+      DOCS.forEach(d => {
+        const a = document.createElement('a');
+        a.className = 'docCard';
+        a.href = d.url; a.target = '_blank'; a.rel = 'noopener';
+        a.setAttribute('aria-label', d.title || 'Dokumen'); // aksesibilitas
+
+        // background (png drive direct / gradient / color)
+        const bs = buildBgStyle(d.bg);
+        if (bs){
+          if (bs.prop === 'backgroundImage') a.style.backgroundImage = bs.value;
+          else                               a.style.background = bs.value;
+        }
+
+        // judul hanya pada overlay label (muncul on hover)
+        a.innerHTML = `
+          ${isAdmin() ? `
+            <button type="button" class="docDel" data-doc-id="${d.id}" aria-label="Hapus dokumen">✕</button>
+          ` : ``}
+          <div class="label">${escapeHtml(d.title || '')}</div>
+        `;
+
+        list.appendChild(a);
+      });
+
+      // tap-to-reveal untuk mobile (toggle .is-revealed, tidak mengganggu klik ke link)
+      list.addEventListener('touchstart', function(e){
+        const card = e.target.closest('.docCard');
+        if (!card) return;
+        // jika belum terbuka, buka dulu dan blokir navigasi sekali
+        if (!card.classList.contains('is-revealed')){
+          card.classList.add('is-revealed');
+          // auto-tutup setelah 2.5s
+          clearTimeout(card._revealTo);
+          card._revealTo = setTimeout(()=>card.classList.remove('is-revealed'), 2500);
+          e.preventDefault(); // cegah langsung membuka link saat tap pertama
+        }
+      }, { passive:false });
+
+      updateDocRailState?.();
+    }
+
+
+    document.getElementById('docRailList')?.addEventListener('click', async (e)=>{
+      const btn = e.target.closest('.docDel');
+      if (!btn) return;
+      e.preventDefault(); e.stopPropagation();
+      const id = btn.dataset.docId;
+      if (!id) return;
+      if (!confirm('Yakin hapus dokumen ini?')) return;
+      try{
+        const res = await fetch(`/docs/${id}`, { method:'DELETE', headers: headersJSON() });
+        if (!res.ok) throw new Error((await res.json()).error || `Gagal hapus (status ${res.status})`);
+        await fetchDocs();
+      }catch(err){ alert(err.message); }
+    });
+
+    /* Tambah dokumen (form) – sama seperti sebelumnya, pastikan kirim bg */
+    document.getElementById('docAddBtn')?.addEventListener('click', async ()=>{
+      const title = (document.getElementById('docTitle').value||'').trim();
+      const url   = (document.getElementById('docUrl').value||'').trim();
+      const type  = (document.getElementById('docType').value||'').trim() || null;
+      const sort  = Number(document.getElementById('docSort').value||0) || 0;
+      const bg    = (document.getElementById('docBg').value||'').trim() || null;
+      if (!title || !url) return alert('Isi judul & URL file/link');
+      try{
+        const res = await fetch('/docs', {
+          method:'POST',
+          headers: headersJSON(),
+          body: JSON.stringify({ title, url, type, sort_order: sort, bg })
+        });
+        if (!res.ok) throw new Error((await res.json()).error || 'Gagal menambah dokumen');
+        // reset
+        document.getElementById('docTitle').value = '';
+        document.getElementById('docUrl').value   = '';
+        document.getElementById('docType').value  = '';
+        document.getElementById('docSort').value  = '0';
+        document.getElementById('docBg').value    = '';
+        await fetchDocs();
+      }catch(e){ alert(e.message); }
+    });
+
+    function scrollDocRail(delta){
+      const sc = document.getElementById('docRailInner');
+      if (!sc) return;
+      const isMobile = window.matchMedia('(max-width:640px)').matches;
+      if (isMobile) sc.scrollBy({ left: delta, behavior:'smooth' });
+      else          sc.scrollBy({ top:  delta, behavior:'smooth' });
+    }
+
+    function updateDocRailNav(){
+      const sc = document.getElementById('docRailInner');
+      if (!sc) return;
+      const up = document.getElementById('docUp');
+      const dn = document.getElementById('docDown');
+
+      const isMobile = window.matchMedia('(max-width:640px)').matches;
+      if (isMobile){ up.setAttribute('disabled',''); dn.setAttribute('disabled',''); return; }
+
+      const atTop    = sc.scrollTop <= 1;
+      const atBottom = sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 1;
+      up.toggleAttribute('disabled', atTop);
+      dn.toggleAttribute('disabled', atBottom);
+    }
+
+    function updateDocRailState(){
+      const rail = document.getElementById('docRailScroll');
+      const sc   = document.getElementById('docRailInner');
+      const list = document.getElementById('docRailList');
+      if (!rail || !sc || !list) return;
+
+      const isMobile = window.matchMedia('(max-width:640px)').matches;
+      const fits = isMobile
+        ? list.scrollWidth  <= sc.clientWidth  - 2
+        : list.scrollHeight <= sc.clientHeight - 2;
+
+      rail.classList.toggle('center', fits);
+      updateDocRailNav();
+    }
+
+    function bindDocRail(){
+      const up = document.getElementById('docUp');
+      const dn = document.getElementById('docDown');
+      const sc = document.getElementById('docRailInner');
+      if (!up || !dn || !sc) return;
+
+      const step = () => window.matchMedia('(max-width:640px)').matches
+        ? Math.max(240, sc.clientWidth  * .8)
+        : Math.max(240, sc.clientHeight * .8);
+
+      up.addEventListener('click', () => scrollDocRail(-step()));
+      dn.addEventListener('click', () => scrollDocRail(+step()));
+
+      /* blokir wheel/touchpad di desktop (hanya tombol yg aktif) */
+      sc.addEventListener('wheel', (e) => {
+        if (!window.matchMedia('(max-width:640px)').matches) e.preventDefault();
+      }, { passive:false });
+
+      sc.addEventListener('scroll', updateDocRailNav);
+      window.addEventListener('resize', updateDocRailState);
+    }
 
     // ===== State =====
     let searched = false;
@@ -840,7 +1225,6 @@
       setHeroCollapsed(false); 
       const params = stateToParams({ q: '', page: 1 });
       replaceRoute(params);
-      
     });
 
     function showLanding() {
@@ -914,17 +1298,15 @@
       if (liveOpen)    mark(btnAsst,'text-blue-700');
     }
 
-
-
-
     // ===== Fetch Data =====
     async function fetchData() {
       try {
-        const [faqRes, gloRes] = await Promise.all([ fetch('/faq'), fetch('/glossary') ]);
-        if (!faqRes.ok || !gloRes.ok) throw new Error('API error');
+        const [faqRes, gloRes,akrRes] = await Promise.all([ fetch('/faq'), fetch('/glossary'), fetch('/akronim') ]);
+        if (!faqRes.ok || !gloRes.ok || !akrRes.ok) throw new Error('API error');
 
         const faqRows = await faqRes.json();
         const gloRows = await gloRes.json();
+        const akrRows = await akrRes.json();
 
         const faqs = (faqRows || []).map(r => ({
           id: r.id ?? r.ID ?? r.Id ?? null,
@@ -946,8 +1328,32 @@
           type: 'glossary'
         }));
 
-        ITEMS = [...faqs, ...glossary].filter(x => x.id && x.title);
-        ITEMS.sort((a,b) => a.title.localeCompare(b.title, 'id', { sensitivity: 'base' }));
+        const akronim = (akrRows || []).map(r => ({
+          id: r.id ?? r.ID ?? r.Id ?? null,
+          title: r.title ?? r.title ?? '',
+          content: r.content ?? r.content ?? '',
+          image_url: null,
+          link_url:  r.link_url  || null,
+          category: 'Akronim',
+          type: 'akronim'
+        }));
+
+        ITEMS = [...akronim, ...glossary, ...faqs].filter(x => x.id && x.title);
+
+        const categoryOrder = {
+          akronim: 1,
+          glossary: 2,
+          faq: 3
+        };
+
+        ITEMS.sort((a, b) => {
+          // Urutkan berdasarkan kategori dulu
+          const catDiff = categoryOrder[a.type] - categoryOrder[b.type];
+          if (catDiff !== 0) return catDiff;
+
+          // Kalau kategorinya sama → urut abjad judul
+          return a.title.localeCompare(b.title, 'id', { sensitivity: 'base' });
+        });         
 
         if (!ITEMS.length) {
           resultsWrap.classList.remove('hidden');
@@ -1197,7 +1603,7 @@
     }
 
     function updateRouteAndUI() {
-      const params = stateToParams({ q: searchInput.value.trim(), page: currentPage, id: activeItem?.id, type: activeItem?.type });
+      const params = stateToParams({ q: searchInput.value.trim(), id: activeItem?.id, type: activeItem?.type });
       pushRoute(params);
       renderResultsUI();
       if (activeItem) renderDetail(activeItem);
@@ -1237,7 +1643,7 @@
       renderDetail(FILTERED[0] || null);
 
       // Sync URL
-      const params = stateToParams({ q: searchInput.value.trim(), page: currentPage, id: activeItem?.id, type: activeItem?.type });
+      const params = stateToParams({ q: searchInput.value.trim(), id: activeItem?.id, type: activeItem?.type });
       replaceRoute(params);
 
       // Jika hasil pencarian kosong, sembunyikan detail
@@ -1306,10 +1712,9 @@
           document.body.classList.remove('aside-open');
           if (typeof applyAsideLayout === 'function') applyAsideLayout();
         }
-        return; // ← penting: hentikan di sini untuk HP
+        return;
       }
 
-      // ====== (di bawah ini persis seperti kode lama Anda) ======
       const adminOpen = !!(adminBox && !adminBox.classList.contains('hidden'));
       const liveOpen  = !!(liveBox  && !liveBox.classList.contains('hidden'));
       const akrOpen = !!(akrBox && ! akrBox.classList.contains('hidden'));
@@ -1402,52 +1807,60 @@
     }
 
     // Helper: apakah klik berada di "zona aman" (tidak menutup menu/panel)
-    // function isInToolsSafeZone(target){
-    //   const top   = document.getElementById('topActions');
-    //   const btn   = document.getElementById('toggleAsideBtn');
-    //   const admin = document.getElementById('adminBar');
-    //   const live  = document.getElementById('liveAssistantBox');
-    //   const host  = document.getElementById('toolsMobileHost'); // host mobile di bawah search
-    //   const aside = document.getElementById('rightAside');      // panel di desktop
+    function isInToolsSafeZone(target){
+      const top   = document.getElementById('topActions');
+      const btn   = document.getElementById('toggleAsideBtn');
+      const admin = document.getElementById('adminBar');
+      const live  = document.getElementById('liveAssistantBox');
+      const host  = document.getElementById('toolsMobileHost'); // host mobile di bawah search
+      const aside = document.getElementById('rightAside');      // panel di desktop
+      const main = document.getElementById('mainGrid');
+      const search = document.getElementById('searchOuter');
+      const doc = document.getElementById('docRail');
 
-    //   return (
-    //     (top   && top.contains(target))   ||
-    //     (btn   && btn.contains(target))   ||
-    //     (admin && admin.contains(target)) ||
-    //     (live  && live.contains(target))  ||
-    //     (host  && host.contains(target))  ||
-    //     (aside && aside.contains(target))
-    //   );
-    // }
+      
+
+      return (
+        (top   && top.contains(target))   ||
+        (btn   && btn.contains(target))   ||
+        (admin && admin.contains(target)) ||
+        (live  && live.contains(target))  ||
+        (host  && host.contains(target))  ||
+        (aside && aside.contains(target)) ||
+        (main && main.contains(target))   ||
+        (search && search.contains(target))||
+        (doc && doc.contains(target))
+      );
+    }
 
     // // Tutup TopActions & SEMUA panel HANYA jika klik benar-benar di luar SEMUA zona aman
-    // document.addEventListener('click', (e) => {
-    //   const box = document.getElementById('topActions');
-    //   const btn = document.getElementById('toggleAsideBtn');
-    //   if (!box || box.classList.contains('hidden')) return;
+    document.addEventListener('click', (e) => {
+      const box = document.getElementById('topActions');
+      const btn = document.getElementById('toggleAsideBtn');
+      if (!box || box.classList.contains('hidden')) return;
 
-    //   if (isInToolsSafeZone(e.target)) return; // ⬅️ klik di area aman: jangan tutup
+      if (isInToolsSafeZone(e.target)) return; // ⬅️ klik di area aman: jangan tutup
 
-    //   box.classList.add('hidden');
-    //   btn?.setAttribute('aria-expanded','false');
-    //   document.body.classList.remove('tools-open');
+      box.classList.add('hidden');
+      btn?.setAttribute('aria-expanded','false');
+      document.body.classList.remove('tools-open');
 
-    //   // tutup semua isi tools (admin/live) sesuai kebijakan kamu
-    //   hideAllToolsPanels();
-    // });
+      // tutup semua isi tools (admin/live) sesuai kebijakan kamu
+      hideAllToolsPanels();
+    });
 
-    // // ESC selalu menutup (tetap sama)
-    // document.addEventListener('keydown', (e) => {
-    //   if (e.key !== 'Escape') return;
-    //   const box = document.getElementById('topActions');
-    //   const btn = document.getElementById('toggleAsideBtn');
-    //   if (!box || box.classList.contains('hidden')) return;
+    // ESC selalu menutup (tetap sama)
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      const box = document.getElementById('topActions');
+      const btn = document.getElementById('toggleAsideBtn');
+      if (!box || box.classList.contains('hidden')) return;
 
-    //   box.classList.add('hidden');
-    //   btn?.setAttribute('aria-expanded','false');
-    //   document.body.classList.remove('tools-open');
-    //   hideAllToolsPanels();
-    // });
+      box.classList.add('hidden');
+      btn?.setAttribute('aria-expanded','false');
+      document.body.classList.remove('tools-open');
+      hideAllToolsPanels();
+    });
 
     function setAkronimHeights(){
       const box = document.getElementById('akronimBox');
@@ -1964,84 +2377,204 @@
       const title = (document.getElementById('faqTitle').value || '').trim();
       const content = (document.getElementById('faqContent').value || '').trim();
       const image_url = (document.getElementById('faqImageUrl').value || '').trim();
-      const link_url  = (document.getElementById('faqUrlLink').value || '').trim();
+      const link_url = (document.getElementById('faqUrlLink').value || '').trim();
       if (!title || !content) return alert('Isi pertanyaan & jawaban');
 
       try {
         const res = await fetch('/faq', {
-          method:'POST',
+          method: 'POST',
           headers: headersJSON(),
           body: JSON.stringify({ title, content, image_url, link_url })
         });
+
         if (!res.ok) throw new Error((await res.json()).error || 'Gagal menambah FAQ');
 
-        // reset form
+        // Reset form input setelah berhasil
         document.getElementById('faqTitle').value = '';
         document.getElementById('faqContent').value = '';
         document.getElementById('faqImageUrl').value = '';
-        document.getElementById('faqUrlLink').value  = '';
-        await doSearch();
-      } catch (e) { alert(e.message); }
+        document.getElementById('faqUrlLink').value = '';
+
+        // Ambil data terbaru dari response dan tambahkan ke tampilan
+        const newFaq = await res.json();
+
+        // Contoh cara menambahkan item baru ke DOM (FAQ)
+        const faqList = document.getElementById('faqList');  // Pastikan ini adalah kontainer FAQ
+        const newFaqElement = document.createElement('div');
+        newFaqElement.classList.add('faq-item');
+        newFaqElement.innerHTML = `
+          <h3>${newFaq.title}</h3>
+          <p>${newFaq.content}</p>
+          <a href="${newFaq.link_url}" target="_blank">${newFaq.link_url}</a>
+          ${newFaq.image_url ? `<img src="${newFaq.image_url}" alt="Image for FAQ" />` : ''}
+        `;
+
+        faqList.appendChild(newFaqElement);  // Tambahkan elemen baru ke dalam daftar FAQ
+      } catch (e) {
+        alert(e.message);
+      }
     });
+
 
     document.getElementById('gloAddBtn')?.addEventListener('click', async () => {
       const title = (document.getElementById('gloTitle').value || '').trim();
       const content = (document.getElementById('gloContent').value || '').trim();
       const image_url = (document.getElementById('gloImageUrl').value || '').trim();
-      const link_url  = (document.getElementById('gloUrlLink').value || '').trim();
+      const link_url = (document.getElementById('gloUrlLink').value || '').trim();
       if (!title || !content) return alert('Isi istilah & definisi');
+
       try {
         const res = await fetch('/glossary', {
-          method:'POST',
+          method: 'POST',
           headers: headersJSON(),
           body: JSON.stringify({ title, content, image_url, link_url })
         });
+
         if (!res.ok) throw new Error((await res.json()).error || 'Gagal menambah glosarium');
+
+        // Reset form input setelah berhasil
         document.getElementById('gloTitle').value = '';
         document.getElementById('gloContent').value = '';
         document.getElementById('gloImageUrl').value = '';
         document.getElementById('gloUrlLink').value = '';
-        await doSearch();
-      } catch (e) { alert(e.message); }
+
+        // Ambil data terbaru dari response dan tambahkan ke tampilan
+        const newGlossary = await res.json();
+
+        // Contoh cara menambahkan item baru ke DOM (Glossary)
+        const glossaryList = document.getElementById('glossaryList');  // Pastikan ini adalah kontainer Glossary
+        const newGlossaryElement = document.createElement('div');
+        newGlossaryElement.classList.add('glossary-item');
+        newGlossaryElement.innerHTML = `
+          <h3>${newGlossary.title}</h3>
+          <p>${newGlossary.content}</p>
+          <a href="${newGlossary.link_url}" target="_blank">${newGlossary.link_url}</a>
+          ${newGlossary.image_url ? `<img src="${newGlossary.image_url}" alt="Image for Glossary" />` : ''}
+        `;
+
+        glossaryList.appendChild(newGlossaryElement);  // Tambahkan elemen baru ke dalam daftar glossary
+      } catch (e) {
+        alert(e.message);
+      }
     });
+
+    document.getElementById('akrAddBtn')?.addEventListener('click', async () => {
+      const title = (document.getElementById('akrTitle').value || '').trim();
+      const content = (document.getElementById('akrContent').value || '').trim();
+      const link_url = (document.getElementById('akrUrlLink').value || '').trim();
+      if (!title || !content) return alert('Isi singkatan & penjelasan');
+
+      try {
+        const res = await fetch('/akronim', {
+          method: 'POST',
+          headers: headersJSON(),
+          body: JSON.stringify({ title, content, link_url })
+        });
+
+        if (!res.ok) throw new Error((await res.json()).error || 'Gagal menambah akronim');
+
+        // Reset form input setelah berhasil
+        document.getElementById('akrTitle').value = '';
+        document.getElementById('akrContent').value = '';
+        document.getElementById('akrUrlLink').value = '';
+
+        // Ambil data terbaru dari response dan tambahkan ke tampilan
+        const newAcronym = await res.json();
+
+        // Contoh cara menambahkan item baru ke DOM (Acronym)
+        const acronymList = document.getElementById('akronimList');  // Pastikan ini adalah kontainer Akronim
+        const newAcronymElement = document.createElement('div');
+        newAcronymElement.classList.add('akronim-item');
+        newAcronymElement.innerHTML = `
+          <h3>${newAcronym.title}</h3>
+          <p>${newAcronym.content}</p>
+          <a href="${newAcronym.link_url}" target="_blank">${newAcronym.link_url}</a>
+        `;
+
+        acronymList.appendChild(newAcronymElement);  // Tambahkan elemen baru ke dalam daftar akronim
+      } catch (e) {
+        alert(e.message);
+      }
+    });
+
+
+    // // hapus (delegation di tbody)
+    // document.getElementById('akronimList')?.addEventListener('click', async (e)=>{
+    //   const btn = e.target.closest('button[data-akr-id][data-akr-act="del"]');
+    //   if (!btn) return;
+    //   const id = btn.getAttribute('data-akr-id');
+    //   if (!confirm('Hapus akronim ini?')) return;
+    //   try {
+    //     const res = await fetch(`/akronim/${id}`, { method:'DELETE', headers: headersJSON() });
+    //     if (!res.ok) throw new Error((await res.json()).error || 'Gagal menghapus');
+    //     await fetchAkronim();
+    //   } catch (err){ alert(err.message); }
+
+    //   ensureAkrValidPage(); renderAkronim(AKRONIM_FILTERED);
+    // });
 
 
     // ===== Admin: Edit/Hapus di panel detail (INLINE) =====
     detailEditBtn.addEventListener('click', () => {
       if (!activeItem) return;
+      // Isi form edit dengan data yang ada
       editTitle.value = activeItem.title || '';
       editContent.value = activeItem.content || '';
       editImageUrl.value = activeItem.image_url || '';
-      document.getElementById('editUrlLink').value = activeItem.link_url || ''; // ← isi url link
+      document.getElementById('editUrlLink').value = activeItem.link_url || '';
+      
+      // Sembunyikan tampilan detail, tampilkan form edit
       detailView.classList.add('hidden');
       detailEditForm.classList.remove('hidden');
     });
+
+    // Saat tombol "Cancel" ditekan
     detailCancelBtn.addEventListener('click', () => {
       detailEditForm.classList.add('hidden');
       detailView.classList.remove('hidden');
     });
 
+    // Saat tombol "Save" atau "Submit" ditekan
     detailEditForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!activeItem) return;
+      
       const newTitle = editTitle.value.trim();
       const newContent = editContent.value.trim();
       const newImage = (editImageUrl.value || '').trim();
-      const newUrl   = (document.getElementById('editUrlLink').value || '').trim();
+      const newUrl = (document.getElementById('editUrlLink').value || '').trim();
+
       if (!newTitle || !newContent) return alert('Judul & Konten wajib diisi');
+
       try {
         const url = `/${activeItem.type}/${activeItem.id}`;
         const res = await fetch(url, {
-          method:'PUT',
+          method: 'PUT',
           headers: headersJSON(),
           body: JSON.stringify({ title: newTitle, content: newContent, image_url: newImage, link_url: newUrl })
         });
         if (!res.ok) throw new Error((await res.json()).error || 'Gagal menyimpan perubahan');
-        await doSearch();
+
+        // Update elemen di halaman dengan data terbaru
+        activeItem.title = newTitle;
+        activeItem.content = newContent;
+        activeItem.image_url = newImage;
+        activeItem.link_url = newUrl;
+
+        // Update tampilan detail setelah sukses simpan
+        detailTitle.textContent = newTitle;
+        detailBody.textContent = newContent;
+        if (newImage) detailImage.src = newImage;
+        detailCat.textContent = newUrl; // Jika ada
+
+        // Sembunyikan form edit, tampilkan tampilan detail
         detailEditForm.classList.add('hidden');
         detailView.classList.remove('hidden');
-      } catch (e) { alert(e.message); }
+      } catch (e) {
+        alert(e.message);
+      }
     });
+
 
     detailDeleteBtn.addEventListener('click', async () => {
       if (!activeItem) return;
@@ -2050,6 +2583,11 @@
         const url = `/${activeItem.type}/${activeItem.id}`;
         const res = await fetch(url, { method:'DELETE', headers: headersJSON() });
         if (!res.ok) throw new Error((await res.json()).error || 'Gagal menghapus');
+
+        const itemElement = document.getElementById(`item-${activeItem.id}`);
+        if (itemElement) itemElement.remove();  // Menghapus elemen item dari daftar
+
+
         activeItem = null;
         await doSearch();
         if (!FILTERED.length) {
@@ -2073,47 +2611,6 @@
       const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
       window.location.href = mailtoLink;
     }
-
-    // tambah
-    document.getElementById('akrAddBtn')?.addEventListener('click', async ()=>{
-      const title = (document.getElementById('akrTitle').value || '').trim();
-      const content = (document.getElementById('akrContent').value || '').trim();
-      const link_url = (document.getElementById('akrUrlLink').value || '').trim();
-      if (!title || !content) return alert('Isi singkatan & penjelasan');
-
-      try {
-        const res = await fetch('/akronim', {
-          method: 'POST',
-          headers: headersJSON(),
-          body: JSON.stringify({ title, content, link_url })
-        });
-        if (!res.ok) throw new Error((await res.json()).error || 'Gagal menambah akronim');
-        // reset
-        document.getElementById('akrTitle').value = '';
-        document.getElementById('akrContent').value = '';
-        document.getElementById('akrUrlLink').value = '';
-        await fetchAkronim();
-        // auto tampilkan panel Akronim biar terlihat hasilnya
-        const boxAkr  = document.getElementById('akronimBox');
-        const btnAkr  = document.getElementById('btnAkronimToggle');
-        if (boxAkr.classList.contains('hidden')) { boxAkr.classList.remove('hidden'); btnAkr?.classList.add('text-sky-700'); }
-      } catch (e){ alert(e.message); }
-    });
-
-    // hapus (delegation di tbody)
-    document.getElementById('akronimList')?.addEventListener('click', async (e)=>{
-      const btn = e.target.closest('button[data-akr-id][data-akr-act="del"]');
-      if (!btn) return;
-      const id = btn.getAttribute('data-akr-id');
-      if (!confirm('Hapus akronim ini?')) return;
-      try {
-        const res = await fetch(`/akronim/${id}`, { method:'DELETE', headers: headersJSON() });
-        if (!res.ok) throw new Error((await res.json()).error || 'Gagal menghapus');
-        await fetchAkronim();
-      } catch (err){ alert(err.message); }
-
-      ensureAkrValidPage(); renderAkronim(AKRONIM_FILTERED);
-    });
 
 
 
@@ -2250,7 +2747,6 @@
         track.style.right  = (opts.right ?? 8) + 'px';
         track.style.top    = m.baseTop + 'px';
         track.style.height = m.trackH + 'px';
-
         const thumbTop = m.scrollable ? Math.round((m.st / m.scrollable) * m.maxThumbTop) : 0;
         thumb.style.height = m.thumbH + 'px';
         thumb.style.top    = Math.max(0, Math.min(m.maxThumbTop, thumbTop)) + 'px';
@@ -2279,9 +2775,11 @@
       if (!q) {                 // kembali ke landing
         showLanding();
         renderDetail(null);
-        refreshScrolllines();   // <-- update garis
+        refreshScrolllines();
+        setPanelHeights();      // ⬅️ tambahkan ini
         return;
       }
+
 
       // mode search
       searched = true;
@@ -2301,6 +2799,7 @@
       }
       refreshScrolllines();     // <-- update garis setelah render
       updateSearchPosition();
+      await fetchDocs(); 
     });
 
     // Boot: baca URL params kalau ada
@@ -2361,7 +2860,7 @@
         renderDetail(FILTERED[0] || null);
       }
 
-      replaceRoute(stateToParams({ q: searchInput.value.trim(), page: currentPage, id, type }));
+      replaceRoute(stateToParams({ q: searchInput.value.trim(), id, type }));
       renderAdminState();
 
       /* kiri */
@@ -2390,10 +2889,14 @@
       refreshScrolllines();
       setPanelHeights();
       updateSearchPosition();
+      await fetchDocs(); 
     })();
 
     applyAsideLayout();
-    
+
+    document.body.classList.add('with-doc-rail'); // tampilkan rail & geser konten
+    bindDocRail();
+    fetchDocs();
   </script>
 </body>
 </html>
