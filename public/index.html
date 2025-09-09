@@ -181,10 +181,10 @@
     #detailBody { white-space: pre-line; }
 
     :root{
-      --doc-rail-w: 100px;
+      --doc-rail-w:100px;
       --doc-rail-gap: 4px;
       --doc-nav-d: 40px;  
-      --doc-card-h: 150px;
+      --doc-card-h: 120px;
     }
 
     #docRail{
@@ -224,7 +224,7 @@
       background:#111;               /* fallback */
       background-size:cover;
       background-position:center;
-      border-radius:14px;
+      border-radius:20px;
       border:1px solid #e5e7eb;
       box-shadow:0 6px 18px rgba(0,0,0,.08);
       overflow:hidden;
@@ -246,7 +246,7 @@
     /* Label judul: hidden by default, muncul saat hover/focus/tap */
     .docCard .label{
       position:absolute; left:8px; right:8px; bottom:8px;
-      padding:8px 10px;
+      padding:8px 12px;
       border-radius:10px;
       background:rgba(0,0,0,.55);
       color:#fff;
@@ -290,7 +290,6 @@
     }
     #docUp{ top:0; } #docDown{ bottom:0; }
     #docRail .nav[disabled]{ opacity:.35; pointer-events:none; }
-
 
     /* ===========================
       Tablet+ : kembalikan animasi lebar form
