@@ -221,8 +221,9 @@
       position:relative;
       display:block;
       height:var(--doc-card-h);
-      background:#111;               /* fallback */
-      background-size:cover;
+      background:#ffffff;               /* fallback */
+      background-size: 70% auto; /* lebar 50%, tinggi otomatis proporsional */
+      background-repeat: no-repeat;
       background-position:center;
       border-radius:20px;
       border:1px solid #e5e7eb;
@@ -1817,8 +1818,7 @@
       const search = document.getElementById('searchOuter');
       const doc = document.getElementById('docRail');
 
-      
-
+    
       return (
         (top   && top.contains(target))   ||
         (btn   && btn.contains(target))   ||
@@ -2113,11 +2113,6 @@
       const totalPages = Math.max(1, Math.ceil((AKRONIM_FILTERED?.length || AKRONIM.length) / PAGE_SIZE_MOBILE_AKR));
       if (akrCurrentPage > totalPages) akrCurrentPage = totalPages;
     }
-
-
-
-
-
 
 
     // ===== Mobile tools host (menaruh Admin/Live di bawah search saat HP) =====
